@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Post from './components/Post';
 import RightSidebar from './components/RightSidebar';
+import AuthModal from './components/AuthModal';
 
 const App = () => {
   const [posts, setPosts] = useState([
@@ -44,6 +45,9 @@ const App = () => {
     }
   ]);
 
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   const communities = [
     { id: 1, name: 'r/javascript', members: '2.4m' },
     { id: 2, name: 'r/reactjs', members: '1.8m' },
@@ -53,6 +57,11 @@ const App = () => {
   ];
 
   const handleVote = (postId, direction) => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+
     setPosts(posts.map(post => {
       if (post.id === postId) {
         const voteChange = (post.userVote === direction) ? -direction : 
@@ -69,25 +78,49 @@ const App = () => {
   };
 
   const addPost = (newPost) => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
     setPosts([newPost, ...posts]);
+  };
+
+  const handleLogin = (username) => {
+    setCurrentUser(username);
+    setShowAuthModal(false);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
   };
 
   return (
     <div className="app">
-      <Header />
+      <Header 
+        currentUser={currentUser} 
+        onAuthClick={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
+      />
       <div className="main-container">
-        <Sidebar onCreatePost={addPost} />
+        <Sidebar onCreatePost={addPost} currentUser={currentUser} />
         <div className="posts-container">
           {posts.map(post => (
             <Post
               key={post.id}
               post={post}
               onVote={handleVote}
+              currentUser={currentUser}
             />
           ))}
         </div>
         <RightSidebar communities={communities} />
       </div>
+      
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLogin={handleLogin}
+      />
     </div>
   );
 };

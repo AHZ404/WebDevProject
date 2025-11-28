@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 
-const Sidebar = ({ onCreatePost }) => {
+const Sidebar = ({ onCreatePost, currentUser }) => {
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [newPost, setNewPost] = useState({ title: '', content: '' });
 
   const handleCreatePost = () => {
+    if (!currentUser) return;
+    
     if (newPost.title.trim()) {
       const post = {
         id: Date.now(),
         community: 'r/javascript',
-        user: 'u/current_user',
+        user: `u/${currentUser}`,
         time: 'Just now',
         title: newPost.title,
         content: newPost.content,
@@ -24,6 +26,14 @@ const Sidebar = ({ onCreatePost }) => {
     }
   };
 
+  const handleCreatePostClick = () => {
+    if (!currentUser) {
+      alert('Please log in to create a post');
+      return;
+    }
+    setShowCreatePost(true);
+  };
+
   return (
     <aside className="sidebar">
       <div className="community-card">
@@ -34,9 +44,9 @@ const Sidebar = ({ onCreatePost }) => {
         
         <button 
           className="create-post-btn"
-          onClick={() => setShowCreatePost(true)}
+          onClick={handleCreatePostClick}
         >
-          Create Post
+          {currentUser ? 'Create Post' : 'Log in to Post'}
         </button>
 
         {showCreatePost && (
