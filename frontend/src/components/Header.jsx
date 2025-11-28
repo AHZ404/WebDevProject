@@ -31,20 +31,12 @@ const Header = ({ currentUser, onAuthClick, onLogout }) => {
               </button>
             </div>
           ) : (
-            <>
-              <button 
-                className="login-btn"
-                onClick={() => onAuthClick(true)}
-              >
-                Log In
-              </button>
-              <button 
-                className="signup-btn"
-                onClick={() => onAuthClick(false)}
-              >
-                Sign Up
-              </button>
-            </>
+            <button 
+              className="login-btn"
+              onClick={onAuthClick}
+            >
+              Log In
+            </button>
           )}
         </div>
       </nav>
