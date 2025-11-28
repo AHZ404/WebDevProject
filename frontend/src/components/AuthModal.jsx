@@ -10,10 +10,12 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
     confirmPassword: ''
   });
 
-  const handleSubmit = (e) => {
+  // 1. Made function async to handle the API request
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (isLogin) {
-      // Login logic
+      // Login logic (Unchanged)
       console.log('Logging in:', { username: formData.username, password: formData.password });
       onLogin(formData.username);
       onClose();
@@ -23,9 +25,38 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
         alert("Passwords don't match!");
         return;
       }
-      console.log('Registering:', formData);
-      onLogin(formData.username);
-      onClose();
+
+      // --- NEW CODE STARTS HERE ---
+      try {
+        const response = await fetch('http://localhost:3000/users/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: formData.username,
+            email: formData.email,
+            password: formData.password
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Success!
+          console.log('Registered User:', data);
+          alert("Account created successfully!");
+          onLogin(data.user.username); // Log the user in with the username from DB
+          onClose(); // Close the modal
+        } else {
+          // Error (e.g., User already exists)
+          alert(data.message || "Registration failed");
+        }
+      } catch (error) {
+        console.error("Connection Error:", error);
+        alert("Could not connect to the server.");
+      }
+      // --- NEW CODE ENDS HERE ---
     }
   };
 
