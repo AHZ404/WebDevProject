@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Post = ({ post, onVote }) => {
+const Post = ({ post, onVote, currentUser }) => {
   const getVoteButtonStyle = (direction) => {
     if (post.userVote === direction) {
       return { color: direction === 1 ? '#ff4500' : '#7193ff' };
@@ -8,12 +8,16 @@ const Post = ({ post, onVote }) => {
     return {};
   };
 
+  const handleVote = (direction) => {
+    onVote(post.id, direction);
+  };
+
   return (
     <div className="post-card">
       <div className="post-votes">
         <button 
           className="vote-btn"
-          onClick={() => onVote(post.id, 1)}
+          onClick={() => handleVote(1)}
           style={getVoteButtonStyle(1)}
         >
           ▲
@@ -21,7 +25,7 @@ const Post = ({ post, onVote }) => {
         <div className="vote-count">{post.votes}</div>
         <button 
           className="vote-btn"
-          onClick={() => onVote(post.id, -1)}
+          onClick={() => handleVote(-1)}
           style={getVoteButtonStyle(-1)}
         >
           ▼

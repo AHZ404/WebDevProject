@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Header = () => {
+const Header = ({ currentUser, onAuthClick, onLogout }) => {
   return (
     <header className="header">
       <nav className="navbar">
@@ -18,8 +18,34 @@ const Header = () => {
           />
         </div>
         <div className="nav-links">
-          <button className="login-btn">Log In</button>
-          <button className="signup-btn">Sign Up</button>
+          {currentUser ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <span style={{ fontSize: '14px', color: '#1c1c1c' }}>
+                Welcome, {currentUser}
+              </span>
+              <button 
+                className="login-btn"
+                onClick={onLogout}
+              >
+                Log Out
+              </button>
+            </div>
+          ) : (
+            <>
+              <button 
+                className="login-btn"
+                onClick={() => onAuthClick(true)}
+              >
+                Log In
+              </button>
+              <button 
+                className="signup-btn"
+                onClick={() => onAuthClick(false)}
+              >
+                Sign Up
+              </button>
+            </>
+          )}
         </div>
       </nav>
     </header>
