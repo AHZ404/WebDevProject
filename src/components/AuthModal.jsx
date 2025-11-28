@@ -36,6 +36,16 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
     });
   };
 
+  const switchToSignup = () => {
+    setIsLogin(false);
+    setFormData({
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -49,6 +59,10 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
             alt="Reddit" 
           />
           <h2>{isLogin ? 'Log in' : 'Sign up'}</h2>
+          <p className="auth-subtitle">
+            {isLogin ? 'By continuing, you agree to our User Agreement and Privacy Policy.' 
+                     : 'By continuing, you agree to our User Agreement and Privacy Policy.'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -96,12 +110,12 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
 
         <div className="auth-switch">
           <p>
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            {isLogin ? "New to Reddit? " : "Already a redditor? "}
             <button 
               className="switch-btn"
               onClick={() => setIsLogin(!isLogin)}
             >
-              {isLogin ? 'Sign up' : 'Log in'}
+              {isLogin ? 'SIGN UP' : 'LOG IN'}
             </button>
           </p>
         </div>

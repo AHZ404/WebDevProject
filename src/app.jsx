@@ -94,11 +94,15 @@ const App = () => {
     setCurrentUser(null);
   };
 
+  const handleAuthClick = () => {
+    setShowAuthModal(true);
+  };
+
   return (
     <div className="app">
       <Header 
         currentUser={currentUser} 
-        onAuthClick={() => setShowAuthModal(true)}
+        onAuthClick={handleAuthClick}
         onLogout={handleLogout}
       />
       <div className="main-container">
