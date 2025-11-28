@@ -1,0 +1,218 @@
+/* Header Styles */
+.header {
+  background-color: white;
+  padding: 0 20px;
+  border-bottom: 1px solid #ccc;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 56px;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+/* Left Section - Logo Only */
+.nav-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo img {
+  height: 32px;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ff4500;
+}
+
+/* Center Section - Search Bar */
+.nav-center {
+  flex: 1;
+  max-width: 600px;
+  display: flex;
+  justify-content: center;
+}
+
+.search-bar {
+  width: 100%;
+  max-width: 500px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #edeff1;
+  border-radius: 20px; /* Oval corners */
+  background-color: #f6f7f8;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #0079d3;
+  background-color: white;
+  box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.2);
+}
+
+.search-input::placeholder {
+  color: #878a8c;
+}
+
+/* Right Section - Icons */
+.nav-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Create Button */
+.create-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #1c1c1c;
+  transition: background-color 0.2s;
+}
+
+.create-btn:hover {
+  background-color: #f6f7f8;
+}
+
+.create-icon {
+  font-size: 16px;
+}
+
+.create-text {
+  font-weight: 500;
+}
+
+/* Icon Buttons */
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.icon-btn:hover {
+  background-color: #f6f7f8;
+}
+
+/* User Profile */
+.user-profile {
+  display: flex;
+  align-items: center;
+}
+
+.profile-pic {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid #edeff1;
+}
+
+.profile-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Auth Actions */
+.auth-actions {
+  display: flex;
+  align-items: center;
+}
+
+.login-btn {
+  padding: 6px 16px;
+  background: #0079d3;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.login-btn:hover {
+  background: #0070c5;
+}
+
+.logout-btn {
+  padding: 6px 12px;
+  background: transparent;
+  color: #0079d3;
+  border: 1px solid #0079d3;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background: #f0f8ff;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 10px;
+  }
+  
+  .create-text {
+    display: none;
+  }
+  
+  .search-bar {
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-bar {
+    max-width: 200px;
+  }
+  
+  .user-actions {
+    gap: 8px;
+  }
+}
