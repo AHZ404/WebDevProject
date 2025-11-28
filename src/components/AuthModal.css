@@ -57,6 +57,15 @@
   color: #1c1c1c;
   font-size: 20px;
   font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.auth-subtitle {
+  color: #787c7e;
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 300px;
+  margin: 0 auto;
 }
 
 .auth-form {
