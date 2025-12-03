@@ -1,28 +1,61 @@
 import React, { useState } from 'react';
+import { API_URL } from './config.jsx';
 
 const Sidebar = ({ onCreatePost, currentUser }) => {
   const [showCreatePost, setShowCreatePost] = useState(false);
-  const [newPost, setNewPost] = useState({ title: '', content: '' });
+  const [newPost, setNewPost] = useState({ title: '', content: '', image: '' }); // Added image
+  const [loading, setLoading] = useState(false);
 
-  const handleCreatePost = () => {
-    if (!currentUser) return;
+  const handleCreatePost = async () => {
+    if (!currentUser) {
+      alert('Please log in to create a post');
+      return;
+    }
     
-    if (newPost.title.trim()) {
-      const post = {
-        id: Date.now(),
-        community: 'r/javascript',
-        user: `u/${currentUser}`,
-        time: 'Just now',
-        title: newPost.title,
-        content: newPost.content,
-        votes: 1,
-        comments: 0,
-        image: null,
-        userVote: 1
-      };
-      onCreatePost(post);
-      setNewPost({ title: '', content: '' });
-      setShowCreatePost(false);
+    if (!newPost.title.trim()) {
+        alert('Post title cannot be empty.');
+        return;
+    }
+    
+    setLoading(true);
+
+    try {
+        const postData = {
+            // CRITICAL: Send the username of the current user
+            username: currentUser, 
+            community: 'r/javascript', // Hardcoded community
+            title: newPost.title,
+            content: newPost.content,
+            image: newPost.image,
+        };
+
+        const response = await fetch(`${API_URL}/posts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(postData),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to create post: Server error.');
+        }
+
+        const createdPost = await response.json();
+        
+        // Pass the successfully created post to the parent App component
+        onCreatePost(createdPost); 
+
+        // Reset state
+        setNewPost({ title: '', content: '', image: '' });
+        setShowCreatePost(false);
+        
+    } catch (error) {
+        console.error('Post creation error:', error);
+        alert(`Failed to create post: ${error.message}`);
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -43,27 +76,25 @@ const Sidebar = ({ onCreatePost, currentUser }) => {
         </p>
         
         <button 
-          className="create-post-btn"
-          onClick={handleCreatePostClick}
+          onClick={handleCreatePostClick} 
+          style={{ 
+            width: '100%', 
+            padding: '10px', 
+            background: '#0079d3', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '20px', 
+            fontWeight: 'bold', 
+            marginBottom: '10px',
+            cursor: 'pointer'
+          }}
         >
-          {currentUser ? 'Create Post' : 'Log in to Post'}
+          CREATE POST
         </button>
-
+        
         {showCreatePost && (
-          <div className="create-post-modal" style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            background: 'white',
-            padding: '20px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            zIndex: 1000,
-            width: '90%',
-            maxWidth: '500px'
-          }}>
-            <h3>Create Post</h3>
+          <div style={{ padding: '10px 0', borderTop: '1px solid #ccc', marginTop: '10px' }}>
+            <h4>New Post in r/javascript</h4>
             <input
               type="text"
               placeholder="Title"
@@ -77,9 +108,34 @@ const Sidebar = ({ onCreatePost, currentUser }) => {
               onChange={(e) => setNewPost({...newPost, content: e.target.value})}
               style={{ width: '100%', marginBottom: '10px', padding: '8px', minHeight: '100px' }}
             />
+            <input
+              type="text"
+              placeholder="Image URL (optional)"
+              value={newPost.image}
+              onChange={(e) => setNewPost({...newPost, image: e.target.value})}
+              style={{ width: '100%', marginBottom: '10px', padding: '8px' }}
+            />
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={handleCreatePost} style={{ padding: '8px 16px' }}>Post</button>
-              <button onClick={() => setShowCreatePost(false)} style={{ padding: '8px 16px' }}>Cancel</button>
+              <button 
+                onClick={handleCreatePost} 
+                disabled={loading}
+                style={{ 
+                  padding: '8px 16px', 
+                  background: loading ? '#ccc' : '#0079d3', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '20px',
+                  cursor: 'pointer'
+                }}
+              >
+                {loading ? 'Posting...' : 'Post'}
+              </button>
+              <button 
+                onClick={() => setShowCreatePost(false)} 
+                style={{ padding: '8px 16px', background: '#ccc', border: 'none', borderRadius: '20px', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         )}

@@ -1,4 +1,9 @@
 import React from 'react';
+// ----------------------------------------------------
+// NEW: Import Link for navigation
+import { Link } from 'react-router-dom'; 
+// ----------------------------------------------------
+import './Header.css'; // Assuming you have this import
 
 const Header = ({ currentUser, onAuthClick, onLogout }) => {
   return (
@@ -19,10 +24,16 @@ const Header = ({ currentUser, onAuthClick, onLogout }) => {
         </div>
         <div className="nav-links">
           {currentUser ? (
+            // LOGGED IN VIEW: Now includes a Link to the profile page
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <span style={{ fontSize: '14px', color: '#1c1c1c' }}>
-                Welcome, {currentUser}
-              </span>
+              
+              {/* NEW: Link component wraps the username */}
+              <Link to={`/u/${currentUser}`} style={{ textDecoration: 'none', color: '#0079d3', fontWeight: 'bold' }}>
+                <span style={{ fontSize: '14px' }}>
+                  Welcome, {currentUser}
+                </span>
+              </Link>
+
               <button 
                 className="login-btn"
                 onClick={onLogout}
@@ -31,6 +42,7 @@ const Header = ({ currentUser, onAuthClick, onLogout }) => {
               </button>
             </div>
           ) : (
+            // LOGGED OUT VIEW
             <button 
               className="login-btn"
               onClick={onAuthClick}
