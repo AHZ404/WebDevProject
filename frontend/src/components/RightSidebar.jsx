@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; // <--- 1. Import Hook
 
 const RightSidebar = ({ communities }) => {
+  const navigate = useNavigate(); // <--- 2. Initialize Hook
+
   return (
     <aside className="right-sidebar">
       <div className="top-communities">
@@ -11,7 +14,16 @@ const RightSidebar = ({ communities }) => {
               <span className="community-number">{index + 1}</span>
               <div className="community-icon"></div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{community.name}</div>
+                
+                {/* <--- 3. Update onClick to navigate to the new page */}
+                <div 
+                  onClick={() => navigate(`/${community.name}`)} // Goes to /r/reactjs
+                  style={{ fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}
+                  className="community-name-hover" 
+                >
+                  {community.name}
+                </div>
+                
                 <div style={{ fontSize: '12px', color: '#787c7e' }}>{community.members} members</div>
               </div>
               <button className="join-btn">Join</button>

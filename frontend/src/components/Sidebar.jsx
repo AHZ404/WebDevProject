@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
 import { API_URL } from './config.jsx';
 
-const Sidebar = ({ onCreatePost, currentUser }) => {
+// <--- 1. Receive 'communities' as a prop
+const Sidebar = ({ onCreatePost, currentUser, communities = [] }) => {
   const [showCreatePost, setShowCreatePost] = useState(false);
-  const [newPost, setNewPost] = useState({ title: '', content: '', image: '' }); // Added image
+  
+  // <--- 2. Add 'community' to the state (default to the first one in the list)
+  const [newPost, setNewPost] = useState({ 
+    title: '', 
+    content: '', 
+    image: '',
+    community: communities[0]?.name || 'r/javascript' 
+  }); 
+  
   const [loading, setLoading] = useState(false);
 
   const handleCreatePost = async () => {
@@ -21,9 +30,8 @@ const Sidebar = ({ onCreatePost, currentUser }) => {
 
     try {
         const postData = {
-            // CRITICAL: Send the username of the current user
             username: currentUser, 
-            community: 'r/javascript', // Hardcoded community
+            community: newPost.community, // <--- 3. Use the selected community
             title: newPost.title,
             content: newPost.content,
             image: newPost.image,
@@ -44,11 +52,10 @@ const Sidebar = ({ onCreatePost, currentUser }) => {
 
         const createdPost = await response.json();
         
-        // Pass the successfully created post to the parent App component
         onCreatePost(createdPost); 
 
-        // Reset state
-        setNewPost({ title: '', content: '', image: '' });
+        // Reset state (Keep the current community selected)
+        setNewPost(prev => ({ ...prev, title: '', content: '', image: '' }));
         setShowCreatePost(false);
         
     } catch (error) {
@@ -94,7 +101,26 @@ const Sidebar = ({ onCreatePost, currentUser }) => {
         
         {showCreatePost && (
           <div style={{ padding: '10px 0', borderTop: '1px solid #ccc', marginTop: '10px' }}>
-            <h4>New Post in r/javascript</h4>
+            
+            {/* <--- 4. New Dropdown Menu for Communities */}
+            <select
+              value={newPost.community}
+              onChange={(e) => setNewPost({...newPost, community: e.target.value})}
+              style={{ 
+                width: '100%', 
+                marginBottom: '10px', 
+                padding: '8px', 
+                borderRadius: '4px',
+                border: '1px solid #ccc' 
+              }}
+            >
+              {communities.map(comm => (
+                <option key={comm.id} value={comm.name}>
+                  {comm.name}
+                </option>
+              ))}
+            </select>
+
             <input
               type="text"
               placeholder="Title"
