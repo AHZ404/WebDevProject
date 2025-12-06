@@ -1,25 +1,25 @@
-import React from 'react';
-// ----------------------------------------------------
-// NEW: Import Link for navigation
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom'; 
-// ----------------------------------------------------
-import './Header.css'; // Assuming you have this import
+import './Header.css'; 
 
-const Header = ({ currentUser, onAuthClick, onLogout }) => {
+// <--- 1. Accept the new prop 'onCreateCommunityClick'
+const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) => {
   // State to toggle the Create menu
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   return (
     <header className="header">
       <nav className="navbar">
-        <div className="logo">
+        {/* --- LOGO SECTION --- */}
+        <Link to="/" className="logo" style={{ textDecoration: 'none' }}>
           <img 
             src="https://www.redditstatic.com/desktop2x/img/favicon/favicon-32x32.png" 
             alt="Reddit" 
           />
           <span>reddit</span>
-        </div>
+        </Link>
         
+        {/* --- SEARCH BAR --- */}
         <div className="search-bar">
           <input 
             type="text" 
@@ -27,8 +27,10 @@ const Header = ({ currentUser, onAuthClick, onLogout }) => {
           />
         </div>
 
+        {/* --- NAVIGATION LINKS --- */}
         <div className="nav-links">
-          {/* --- NEW CREATE DROPDOWN --- */}
+          
+          {/* --- CREATE DROPDOWN --- */}
           <div className="create-dropdown-container">
             <button 
               className="create-btn" 
@@ -44,23 +46,34 @@ const Header = ({ currentUser, onAuthClick, onLogout }) => {
                   <span className="item-icon">📝</span>
                   Create Post
                 </div>
-                <div className="dropdown-item" onClick={() => console.log('Go to Create Community')}>
+                
+                {/* <--- 2. CONNECTED BUTTON IS HERE */}
+                <div 
+                  className="dropdown-item" 
+                  onClick={() => {
+                     setIsCreateOpen(false); // Close dropdown
+                     if (currentUser) {
+                        onCreateCommunityClick(); // Open the new Modal
+                     } else {
+                        onAuthClick(); // Or ask them to login first
+                     }
+                  }}
+                >
                   <span className="item-icon">r/</span>
                   Create Community
                 </div>
               </div>
             )}
           </div>
-          {/* --------------------------- */}
 
+          {/* --- AUTH BUTTONS --- */}
           {currentUser ? (
-            // LOGGED IN VIEW: Now includes a Link to the profile page
+            // LOGGED IN VIEW
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               
-              {/* NEW: Link component wraps the username */}
-              <Link to={`/u/${currentUser}`} style={{ textDecoration: 'none', color: '#0079d3', fontWeight: 'bold' }}>
+              <Link to={`/u/${currentUser.username || currentUser}`} style={{ textDecoration: 'none', color: '#0079d3', fontWeight: 'bold' }}>
                 <span style={{ fontSize: '14px' }}>
-                  Welcome, {currentUser}
+                  Welcome, {currentUser.username || currentUser}
                 </span>
               </Link>
 

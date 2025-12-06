@@ -5,30 +5,39 @@ const Post = require('../models/post');
 const User = require('../models/user'); 
 
 // ------------------------------------------------------------------
-// 1. GET ALL POSTS (For Homepage Feed)
+// 1. GET POSTS (Modified for Filtering)
 // ------------------------------------------------------------------
 
 /**
- * @desc Get all posts for the homepage feed
- * @route GET /posts
+ * @desc Get posts (All posts OR filtered by community)
+ * @route GET /posts?community=r/reactjs
  * @access Public
  */
 const getAllPosts = async (req, res) => {
     try {
-        // Fetch posts, sort by creation date (newest first), and exclude Mongoose metadata
-        const posts = await Post.find({})
+        // <--- NEW: Check if the URL has a community filter (e.g., /posts?community=r/reactjs)
+        const { community } = req.query;
+        
+        let filter = {};
+        if (community) {
+            // If community exists, tell MongoDB to only find posts matching that name
+            filter = { community: community };
+        }
+
+        // Pass the 'filter' to .find(). If filter is empty {}, it returns everything.
+        const posts = await Post.find(filter)
             .sort({ createdAt: -1 })
             .select('-__v'); 
 
         res.status(200).json(posts);
     } catch (error) {
-        console.error('Error fetching all posts:', error);
-        res.status(500).json({ message: 'Server error while fetching feed posts' });
+        console.error('Error fetching posts:', error);
+        res.status(500).json({ message: 'Server error while fetching posts' });
     }
 };
 
 // ------------------------------------------------------------------
-// 2. CREATE POST (The Fix)
+// 2. CREATE POST
 // ------------------------------------------------------------------
 
 /**
@@ -44,8 +53,6 @@ const createPost = async (req, res) => {
             return res.status(400).json({ message: 'Title and username are required.' });
         }
         
-        // 🔑 CRITICAL FIX: Find the User object to get their Mongoose ObjectId (_id).
-        // This solves the 'user: Path is required' validation error.
         const user = await User.findOne({ username });
 
         if (!user) {
@@ -53,9 +60,7 @@ const createPost = async (req, res) => {
         }
         
         const newPost = await Post.create({
-            // Pass the user's ObjectId
             user: user._id, 
-            // Pass the username string (as required by your schema)
             username, 
             community: community || 'r/javascript', 
             title,
@@ -65,7 +70,6 @@ const createPost = async (req, res) => {
             commentsCount: 0,
         });
 
-        // Update user's post karma (relies on the User model)
         await User.findOneAndUpdate(
             { username: username }, 
             { $inc: { 'karma.postKarma': 1 } }
@@ -74,14 +78,13 @@ const createPost = async (req, res) => {
         res.status(201).json(newPost);
         
     } catch (error) {
-        // This console log will show any remaining validation errors (e.g., if a title is too long)
         console.error('Error creating post:', error.message);
         res.status(500).json({ message: 'Server error while creating post' });
     }
 };
 
 // ------------------------------------------------------------------
-// 3. GET POSTS BY USER (For Profile Page - Already Fixed)
+// 3. GET POSTS BY USER
 // ------------------------------------------------------------------
 
 /**
@@ -93,7 +96,6 @@ const getPostsByUser = async (req, res) => {
     try {
         const { username } = req.params;
 
-        // Query by username string (case-insensitive for robustness)
         const posts = await Post.find({ username: { $regex: new RegExp(`^${username}$`, 'i') } })
             .sort({ createdAt: -1 }) 
             .select('-__v'); 
@@ -106,9 +108,34 @@ const getPostsByUser = async (req, res) => {
     }
 };
 
+const votePost = async (req, res) => {
+  try {
+    const { id } = req.params;      // The Post ID from the URL
+    const { direction } = req.body; // 'up' or 'down'
+
+    const post = await Post.findById(id);
+    if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Simple voting logic (just increments/decrements count)
+    // Note: A real production app would track *who* voted to prevent duplicate votes.
+    if (direction === 'up') {
+      post.votes += 1;
+    } else if (direction === 'down') {
+      post.votes -= 1;
+    }
+
+    await post.save();
+    res.status(200).json(post);
+  } catch (error) {
+    res.status(500).json({ message: "Error voting on post" });
+  }
+};
 
 module.exports = {
-    getAllPosts,
-    createPost,
-    getPostsByUser,
+  getAllPosts,
+  createPost,
+  getPostsByUser,
+  votePost // <--- ADD THIS
 };
