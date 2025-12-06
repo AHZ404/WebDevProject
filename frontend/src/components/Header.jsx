@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
-import './Header.css'; // Ensure this matches your file name
+import React from 'react';
+// ----------------------------------------------------
+// NEW: Import Link for navigation
+import { Link } from 'react-router-dom'; 
+// ----------------------------------------------------
+import './Header.css'; // Assuming you have this import
 
 const Header = ({ currentUser, onAuthClick, onLogout }) => {
   // State to toggle the Create menu
@@ -50,10 +54,16 @@ const Header = ({ currentUser, onAuthClick, onLogout }) => {
           {/* --------------------------- */}
 
           {currentUser ? (
-            <div className="user-actions">
-              <span className="welcome-text">
-                Welcome, {currentUser}
-              </span>
+            // LOGGED IN VIEW: Now includes a Link to the profile page
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              
+              {/* NEW: Link component wraps the username */}
+              <Link to={`/u/${currentUser}`} style={{ textDecoration: 'none', color: '#0079d3', fontWeight: 'bold' }}>
+                <span style={{ fontSize: '14px' }}>
+                  Welcome, {currentUser}
+                </span>
+              </Link>
+
               <button 
                 className="logout-btn"
                 onClick={onLogout}
@@ -62,6 +72,7 @@ const Header = ({ currentUser, onAuthClick, onLogout }) => {
               </button>
             </div>
           ) : (
+            // LOGGED OUT VIEW
             <button 
               className="login-btn"
               onClick={onAuthClick}
