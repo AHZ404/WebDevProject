@@ -21,6 +21,7 @@ connectDB();
 
 // Use Routes (ONCE each)
 app.use('/users', authRoutes);
+app.use('/users', userRoutes);
 app.use('/posts', postRoutes); 
 app.use('/subreddits', subredditRoutes);
 app.use('/comments', commentRoutes); 
