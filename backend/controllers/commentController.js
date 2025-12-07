@@ -2,6 +2,7 @@ const Comment = require('../models/comment');
 const Post = require('../models/post');
 const User = require('../models/user'); 
 
+// 1. CREATE COMMENT
 const createComment = async (req, res) => {
   try {
     const { content, postId, parentId, username } = req.body;
@@ -23,6 +24,7 @@ const createComment = async (req, res) => {
   } catch (error) { res.status(500).json({ message: "Failed to create comment" }); }
 };
 
+// 2. GET POST COMMENTS
 const getPostComments = async (req, res) => {
     try {
         const { postId } = req.params;
@@ -31,10 +33,11 @@ const getPostComments = async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Failed to fetch comments" }); }
 };
 
+// 3. VOTE COMMENT
 const voteComment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { direction, username } = req.body; // <--- Expect Username
+    const { direction, username } = req.body; 
 
     const comment = await Comment.findById(id);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
@@ -73,4 +76,33 @@ const voteComment = async (req, res) => {
   } catch (error) { res.status(500).json({ message: "Error voting" }); }
 };
 
-module.exports = { createComment, getPostComments, voteComment };
+// 4. GET COMMENTS BY USER (THIS WAS MISSING!)
+const getCommentsByUser = async (req, res) => {
+    try {
+        const { username } = req.params;
+        
+        // 1. Find the User ID from the username string
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // 2. Find comments where 'author' matches that ID
+        const comments = await Comment.find({ author: user._id })
+            .sort({ createdAt: -1 })
+            .populate('post', 'title community') // Get the post info
+            .populate('author', 'username');     // Get the author info
+
+        res.status(200).json(comments);
+    } catch (error) {
+        console.error("Error fetching user comments:", error);
+        res.status(500).json({ message: "Failed to fetch user comments" });
+    }
+};
+
+module.exports = { 
+    createComment, 
+    getPostComments, 
+    voteComment,
+    getCommentsByUser // Now this will work because the function is defined above
+};
