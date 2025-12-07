@@ -1,14 +1,14 @@
 const express = require("express");
 require("dotenv").config();
-const path = require("path");
 const connectDB = require("./config/db");
 const cors = require("cors"); 
 
-// Import Routes
+// Import Routes (ONCE each)
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const postRoutes = require('./routes/postRoutes');
-const subredditRoutes = require('./routes/subredditRoutes'); // <--- CHECK THIS LINE
+const subredditRoutes = require('./routes/subredditRoutes');
+const commentRoutes = require('./routes/commentRoutes'); // Added this for the comments feature
 
 const app = express();
 
@@ -19,11 +19,11 @@ app.use(express.json());
 // Database Connection
 connectDB();
 
-// Use Routes
+// Use Routes (ONCE each)
 app.use('/users', authRoutes);
-app.use('/users', userRoutes);
 app.use('/posts', postRoutes); 
-app.use('/subreddits', subredditRoutes); // <--- AND THIS LINE
+app.use('/subreddits', subredditRoutes);
+app.use('/comments', commentRoutes); 
 
 const PORT = 3000;
 

@@ -1,141 +1,93 @@
-// postController.js
-
-// 🔑 CRITICAL FIX: Ensure Mongoose Models are correctly required
-const Post = require('../models/post'); 
+const Post = require('../models/post');
 const User = require('../models/user'); 
 
-// ------------------------------------------------------------------
-// 1. GET POSTS (Modified for Filtering)
-// ------------------------------------------------------------------
-
-/**
- * @desc Get posts (All posts OR filtered by community)
- * @route GET /posts?community=r/reactjs
- * @access Public
- */
+// 1. GET POSTS
 const getAllPosts = async (req, res) => {
     try {
-        // <--- NEW: Check if the URL has a community filter (e.g., /posts?community=r/reactjs)
         const { community } = req.query;
-        
         let filter = {};
-        if (community) {
-            // If community exists, tell MongoDB to only find posts matching that name
-            filter = { community: community };
-        }
-
-        // Pass the 'filter' to .find(). If filter is empty {}, it returns everything.
-        const posts = await Post.find(filter)
-            .sort({ createdAt: -1 })
-            .select('-__v'); 
-
+        if (community) filter = { community: community };
+        const posts = await Post.find(filter).sort({ createdAt: -1 }).select('-__v'); 
         res.status(200).json(posts);
-    } catch (error) {
-        console.error('Error fetching posts:', error);
-        res.status(500).json({ message: 'Server error while fetching posts' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
-// ------------------------------------------------------------------
 // 2. CREATE POST
-// ------------------------------------------------------------------
-
-/**
- * @desc Create a new post
- * @route POST /posts
- * @access Private (Simulated)
- */
 const createPost = async (req, res) => {
     try {
         const { username, community, title, content, image } = req.body; 
-
-        if (!username || !title) {
-            return res.status(400).json({ message: 'Title and username are required.' });
-        }
-        
+        if (!username || !title) return res.status(400).json({ message: 'Missing fields' });
         const user = await User.findOne({ username });
-
-        if (!user) {
-            return res.status(404).json({ message: 'Posting user not found in database.' });
-        }
-        
+        if (!user) return res.status(404).json({ message: 'User not found' });
         const newPost = await Post.create({
-            user: user._id, 
-            username, 
-            community: community || 'r/javascript', 
-            title,
-            content,
-            image,
-            votes: 1, 
-            commentsCount: 0,
+            user: user._id, username, community: community || 'r/javascript', 
+            title, content, image, votes: 1, commentsCount: 0,
+            upvotedBy: [username], // Auto-upvote by creator
+            downvotedBy: []
         });
-
-        await User.findOneAndUpdate(
-            { username: username }, 
-            { $inc: { 'karma.postKarma': 1 } }
-        );
-
         res.status(201).json(newPost);
-        
-    } catch (error) {
-        console.error('Error creating post:', error.message);
-        res.status(500).json({ message: 'Server error while creating post' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
-// ------------------------------------------------------------------
 // 3. GET POSTS BY USER
-// ------------------------------------------------------------------
-
-/**
- * @desc Get all posts by a specific user (for profile page)
- * @route GET /users/:username/posts
- * @access Public
- */
 const getPostsByUser = async (req, res) => {
     try {
         const { username } = req.params;
-
-        const posts = await Post.find({ username: { $regex: new RegExp(`^${username}$`, 'i') } })
-            .sort({ createdAt: -1 }) 
-            .select('-__v'); 
-            
+        const posts = await Post.find({ username: { $regex: new RegExp(`^${username}$`, 'i') } }).sort({ createdAt: -1 });
         res.status(200).json(posts);
-
-    } catch (error) {
-        console.error('Error fetching user posts:', error);
-        res.status(500).json({ message: 'Server error while fetching user posts' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
+// 4. VOTE POST (The Big Fix)
 const votePost = async (req, res) => {
   try {
-    const { id } = req.params;      // The Post ID from the URL
-    const { direction } = req.body; // 'up' or 'down'
+    const { id } = req.params;
+    const { direction, username } = req.body; // <--- Expect Username now
 
     const post = await Post.findById(id);
-    if (!post) {
-        return res.status(404).json({ message: "Post not found" });
-    }
+    if (!post) return res.status(404).json({ message: "Post not found" });
 
-    // Simple voting logic (just increments/decrements count)
-    // Note: A real production app would track *who* voted to prevent duplicate votes.
+    const alreadyUpvoted = post.upvotedBy.includes(username);
+    const alreadyDownvoted = post.downvotedBy.includes(username);
+
     if (direction === 'up') {
-      post.votes += 1;
+        if (alreadyUpvoted) {
+            post.votes -= 1;
+            post.upvotedBy.pull(username);
+        } else if (alreadyDownvoted) {
+            post.votes += 2;
+            post.downvotedBy.pull(username);
+            post.upvotedBy.push(username);
+        } else {
+            post.votes += 1;
+            post.upvotedBy.push(username);
+        }
     } else if (direction === 'down') {
-      post.votes -= 1;
+        if (alreadyDownvoted) {
+            post.votes += 1;
+            post.downvotedBy.pull(username);
+        } else if (alreadyUpvoted) {
+            post.votes -= 2;
+            post.upvotedBy.pull(username);
+            post.downvotedBy.push(username);
+        } else {
+            post.votes -= 1;
+            post.downvotedBy.push(username);
+        }
     }
 
     await post.save();
     res.status(200).json(post);
-  } catch (error) {
-    res.status(500).json({ message: "Error voting on post" });
-  }
+  } catch (error) { res.status(500).json({ message: "Error voting" }); }
 };
 
-module.exports = {
-  getAllPosts,
-  createPost,
-  getPostsByUser,
-  votePost // <--- ADD THIS
+// 5. GET SINGLE POST
+const getPostById = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+    res.status(200).json(post);
+  } catch (error) { res.status(500).json({ message: "Server error" }); }
 };
+
+module.exports = { getAllPosts, createPost, getPostsByUser, votePost, getPostById };
