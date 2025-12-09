@@ -6,7 +6,8 @@ const postSchema = new mongoose.Schema({
   community: { type: String, required: true },
   title: { type: String, required: true, trim: true },
   content: { type: String, trim: true },
-  image: { type: String },
+  media: { type: String ,required: false},
+  mediaUrl: { type: String, required: false}, 
   votes: { type: Number, default: 0 },
   commentsCount: { type: Number, default: 0 },
   

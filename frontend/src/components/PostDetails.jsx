@@ -91,7 +91,8 @@ const PostDetails = ({ currentUser }) => {
               ...post, 
               id: post._id, 
               user: `u/${post.username}`, 
-              time: post.createdAt
+              time: post.createdAt,
+              mediaUrl: post.mediaUrl
           }} onVote={() => {}} currentUser={currentUser} />
 
           {/* Comment Section */}

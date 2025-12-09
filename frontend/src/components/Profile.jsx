@@ -169,8 +169,9 @@ const Profile = ({ currentUser }) => {
                                     content: post.content,
                                     votes: post.votes,
                                     comments: post.commentsCount,
-                                    image: post.image,
-                                    userVote: 0 
+                                    mediaUrl: post.mediaUrl,
+                                    upvotedBy: post.upvotedBy || [],
+                                    downvotedBy: post.downvotedBy || []
                                 }}
                                 onVote={() => {}} 
                                 currentUser={currentUser}

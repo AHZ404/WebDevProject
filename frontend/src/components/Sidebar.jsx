@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { API_URL } from './config.jsx';
 
 // <--- 1. Receive 'communities' as a prop
@@ -14,58 +15,65 @@ const Sidebar = ({ onCreatePost, currentUser, communities = [] }) => {
   }); 
   
   const [loading, setLoading] = useState(false);
+  const [mediaFile, setMediaFile] = useState(null); // To store the selected File object
+  const [mediaPreview, setMediaPreview] = useState(null);
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setMediaFile(file);
+            setMediaPreview(URL.createObjectURL(file)); // Create a temporary URL for browser preview
+        } else {
+            setMediaFile(null);
+            setMediaPreview(null);
+        }
 
-  const handleCreatePost = async () => {
+    };
+const handleCreatePost = async () => {
     if (!currentUser) {
-      alert('Please log in to create a post');
-      return;
+        alert('Please log in to create a post');
+        return;
     }
-    
+   
     if (!newPost.title.trim()) {
         alert('Post title cannot be empty.');
         return;
     }
-    
+   
     setLoading(true);
-
+   
+    const formData = new FormData();
+    // FIX: Use currentUser.username || currentUser to ensure it's always a string
+    formData.append('username', currentUser.username || currentUser);
+    formData.append('community', newPost.community);
+    formData.append('title', newPost.title);
+    formData.append('content', newPost.content);
+    if (mediaFile) {
+        formData.append("media", mediaFile);
+    }
+    // Log FormData contents for debugging
+    for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+    }
     try {
-        const postData = {
-            username: currentUser, 
-            community: newPost.community, // <--- 3. Use the selected community
-            title: newPost.title,
-            content: newPost.content,
-            image: newPost.image,
-        };
-
-        const response = await fetch(`${API_URL}/posts`, {
-            method: 'POST',
+        const response = await axios.post(`${API_URL}/posts/create`, formData, {
             headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(postData),
+                'Content-Type': 'multipart/form-data' // <--- Make sure this is set
+            }
         });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to create post: Server error.');
-        }
-
-        const createdPost = await response.json();
-        
-        onCreatePost(createdPost); 
-
-        // Reset state (Keep the current community selected)
-        setNewPost(prev => ({ ...prev, title: '', content: '', image: '' }));
+        const createdPost = response.data;
+        onCreatePost(createdPost);
+        setNewPost(prev => ({ ...prev, title: '', content: '' }));
+        setMediaFile(null);
+        setMediaPreview(null);
         setShowCreatePost(false);
-        
     } catch (error) {
-        console.error('Post creation error:', error);
-        alert(`Failed to create post: ${error.message}`);
+        console.error('❌ Post creation error:', error);
+        console.error('❌ Response:', error.response?.data); // <--- ADD THIS to see backend error
+        alert(`Failed to create post: ${error.response?.data?.message || error.message}`);
     } finally {
         setLoading(false);
     }
   };
-
   const handleCreatePostClick = () => {
     if (!currentUser) {
       alert('Please log in to create a post');
@@ -134,13 +142,35 @@ const Sidebar = ({ onCreatePost, currentUser, communities = [] }) => {
               onChange={(e) => setNewPost({...newPost, content: e.target.value})}
               style={{ width: '100%', marginBottom: '10px', padding: '8px', minHeight: '100px' }}
             />
-            <input
-              type="text"
-              placeholder="Image URL (optional)"
-              value={newPost.image}
-              onChange={(e) => setNewPost({...newPost, image: e.target.value})}
-              style={{ width: '100%', marginBottom: '10px', padding: '8px' }}
-            />
+       <div style={{ marginBottom: '10px', border: '1px dashed #ccc', padding: '10px', borderRadius: '4px' }}>
+                            {mediaPreview ? (
+                                <div>
+                                    {/* Preview: Check if it's an image or video */}
+                                    {mediaFile.type.startsWith('image/') ? (
+                                        <img src={mediaPreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '150px' }} />
+                                    ) : (
+                                        <video controls src={mediaPreview} style={{ maxWidth: '100%', maxHeight: '150px' }} />
+                                    )}
+                                    <button 
+                                        type="button" 
+                                        onClick={() => { setMediaFile(null); setMediaPreview(null); }}
+                                        style={{ marginTop: '5px', background: '#ccc', border: 'none', padding: '5px 10px', cursor: 'pointer' }}
+                                    >
+                                        Remove File
+                                    </button>
+                                </div>
+                            ) : (
+                                <label style={{ display: 'block', textAlign: 'center', cursor: 'pointer' }}>
+                                    Click to upload Image/Video
+                                    <input
+                                        type="file"
+                                        accept="image/*,video/*" // Accepts both images and videos
+                                        onChange={handleFileChange}
+                                        style={{ display: 'none' }} // Hide the actual input element
+                                    />
+                                </label>
+                            )}
+                        </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button 
                 onClick={handleCreatePost} 
@@ -155,6 +185,7 @@ const Sidebar = ({ onCreatePost, currentUser, communities = [] }) => {
                 }}
               >
                 {loading ? 'Posting...' : 'Post'}
+                
               </button>
               <button 
                 onClick={() => setShowCreatePost(false)} 

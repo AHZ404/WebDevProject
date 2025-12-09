@@ -18,6 +18,7 @@ const App = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCommunityModal, setShowCommunityModal] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [sortBy, setSortBy] = useState('hot');
 
   // 1. Fetch Posts (Username Check)
   const fetchPosts = async () => {
@@ -33,7 +34,7 @@ const App = () => {
           } catch(e) { currentUsername = savedUserStr; }
       }
 
-      const response = await fetch(`${API_URL}/posts`);
+      const response = await fetch(`${API_URL}/posts?sortBy=${sortBy}`);
       if (response.ok) {
         const data = await response.json();
         if (!Array.isArray(data)) return setPosts([]);
@@ -59,7 +60,7 @@ const App = () => {
                 content: post.content,
                 votes: post.votes,
                 comments: post.commentsCount,
-                image: post.image,
+                mediaUrl: post.mediaUrl,
                 userVote: status, 
                 upvotedBy: upList,
                 downvotedBy: downList
@@ -79,14 +80,23 @@ const App = () => {
     } catch (error) { console.error(error); }
   };
 
+  // 1. Setup Effect: Runs only ONCE when the app loads
   useEffect(() => {
-    fetchPosts();
     fetchCommunities(); 
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
-      try { setCurrentUser(JSON.parse(savedUser)); } catch (e) { setCurrentUser(savedUser); }
+      try { 
+        setCurrentUser(JSON.parse(savedUser)); 
+      } catch (e) { 
+        setCurrentUser(savedUser); 
+      }
     }
-  }, []);
+  }, []); // Empty array = run once
+
+  // 2. Data Effect: Runs on load AND whenever 'sortBy' changes
+  useEffect(() => {
+    fetchPosts();
+  }, [sortBy]); // <--- This triggers the re-fetch when the dropdown changes
 
   const handleLogin = (user) => {
     setCurrentUser(user);
@@ -140,11 +150,76 @@ const App = () => {
   return (
     <Router>
       <div className="app">
-        <Header currentUser={currentUser} onAuthClick={() => setShowAuthModal(true)} onLogout={handleLogout} onCreateCommunityClick={() => setShowCommunityModal(true)} />
-        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onLogin={handleLogin} />
-        <CreateCommunityModal isOpen={showCommunityModal} onClose={() => setShowCommunityModal(false)} refreshCommunities={fetchCommunities} currentUser={currentUser} />
+        <Header 
+          currentUser={currentUser} 
+          onAuthClick={() => setShowAuthModal(true)} 
+          onLogout={handleLogout} 
+          onCreateCommunityClick={() => setShowCommunityModal(true)} 
+        />
+        
+        <AuthModal 
+          isOpen={showAuthModal} 
+          onClose={() => setShowAuthModal(false)} 
+          onLogin={handleLogin} 
+        />
+        
+        <CreateCommunityModal 
+          isOpen={showCommunityModal} 
+          onClose={() => setShowCommunityModal(false)} 
+          refreshCommunities={fetchCommunities} 
+          currentUser={currentUser} 
+        />
+
         <Routes>
-          <Route path="/" element={<div className="main-container"><Sidebar onCreatePost={fetchPosts} currentUser={currentUser} communities={communities} /><div className="posts-container">{loadingPosts ? <div style={{textAlign:'center', padding:'50px'}}>Loading...</div> : posts.length > 0 ? posts.map(post => <Post key={post.id} post={post} currentUser={currentUser} onVote={handleVote} />) : <div style={{textAlign:'center', padding:'50px'}}>No posts found.</div>}</div><RightSidebar communities={communities} /></div>} />
+          <Route path="/" element={
+            <div className="main-container">
+              <Sidebar onCreatePost={fetchPosts} currentUser={currentUser} communities={communities} />
+              
+              <div className="posts-container">
+                
+                {/* 5. NEW SORTING DROPDOWN UI */}
+                <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#1c1c1c' }}>Sort by:</span>
+                    <select 
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        style={{ 
+                            padding: '6px 12px', 
+                            borderRadius: '20px', 
+                            border: '1px solid #ccc',
+                            fontWeight: 'bold',
+                            color: '#0079d3',
+                            cursor: 'pointer',
+                            outline: 'none'
+                        }}
+                    >
+                        <option value="hot">🔥 Hot</option>
+                        <option value="new">✨ New</option>
+                        <option value="old">📅 Old</option>
+                        
+                    </select>
+                </div>
+
+                {loadingPosts ? (
+                    <div style={{textAlign:'center', padding:'50px'}}>Loading...</div>
+                ) : posts.length > 0 ? (
+                    posts.map(post => (
+                        <Post 
+                          key={post.id} 
+                          post={post} 
+                          currentUser={currentUser} 
+                          onVote={handleVote} 
+                        />
+                    ))
+                ) : (
+                    <div style={{textAlign:'center', padding:'50px'}}>No posts found.</div>
+                )}
+              </div>
+              
+              <RightSidebar communities={communities} />
+            </div>
+          } />
+          
           <Route path="/r/:communityName" element={<Community currentUser={currentUser} />} />
           <Route path="/u/:username" element={<Profile currentUser={currentUser} />} />
           <Route path="/r/:communityName/comments/:postId" element={<PostDetails currentUser={currentUser} />} />
@@ -153,5 +228,4 @@ const App = () => {
     </Router>
   );
 };
-
 export default App;
