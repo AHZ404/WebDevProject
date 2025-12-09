@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// import './Post.css'; 
+import { API_URL } from './config'; // Make sure this is imported
 
 const Post = ({ post, onVote, currentUser }) => {
-  // 1. Add Local State (Just like CommentItem)
   const [votes, setVotes] = useState(post.votes);
   const [userVote, setUserVote] = useState(0); 
 
-  // 2. The "Instant Update" Effect
+
   useEffect(() => {
-    // Sync local state with props first (in case data changes from backend)
     setVotes(post.votes);
 
-    if (currentUser) {
-        // If Logged In: Check the lists passed in props
+    if (post.userVote !== undefined) {
+        setUserVote(post.userVote);
+    } 
+    else if (currentUser) {
         const username = currentUser.username || currentUser;
         const upvoted = (post.upvotedBy || []).includes(username);
         const downvoted = (post.downvotedBy || []).includes(username);
@@ -21,11 +21,11 @@ const Post = ({ post, onVote, currentUser }) => {
         if (upvoted) setUserVote(1);
         else if (downvoted) setUserVote(-1);
         else setUserVote(0);
-    } else {
-        // If Logged Out: Reset to Grey INSTANTLY
+    } 
+    else {
         setUserVote(0);
     }
-  }, [currentUser, post]); // Runs when User or Post data changes
+  }, [currentUser, post]);
 
   const getVoteButtonStyle = (direction) => {
     if (userVote === direction) {
@@ -35,11 +35,8 @@ const Post = ({ post, onVote, currentUser }) => {
   };
 
   const handleVote = (directionStr) => {
-    // Call the parent function to update Backend/App state
     onVote(post.id, directionStr);
-
-    // Optimistically update Local State (so it feels fast)
-    if (!currentUser) return; // Parent will handle alert
+    if (!currentUser) return; 
 
     let newVotes = votes;
     let newUserVote = userVote;
@@ -59,8 +56,21 @@ const Post = ({ post, onVote, currentUser }) => {
     setUserVote(newUserVote);
   };
 
-  // Safe URL for the title link
   const communityNameClean = post.community ? post.community.replace('r/', '') : 'all';
+
+  // --- NEW: Helper to fix the image URL ---
+  const getMediaUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path; // It's already a full link
+    
+    // If API_URL is http://localhost:5000/api, we need just http://localhost:5000
+    // We remove the '/api' part to get the base server URL
+    const baseUrl = API_URL.replace('/api', ''); 
+    return `${baseUrl}${path}`;
+  };
+
+  const finalMediaUrl = getMediaUrl(post.mediaUrl);
+  // ---------------------------------------
 
   return (
     <div className="post-card">
@@ -93,15 +103,28 @@ const Post = ({ post, onVote, currentUser }) => {
         >
             <h3 className="post-title">{post.title}</h3>
         </Link>
-
+    
         {post.content && <p className="post-body">{post.content}</p>}
-        {post.image && (
-          <img 
-            src={post.image} 
-            alt="Post" 
-            className="post-image" 
-          />
-        )}
+
+      {/* --- UPDATED MEDIA DISPLAY LOGIC --- */}
+      {finalMediaUrl && finalMediaUrl.endsWith('.mp4') ? (
+        <video
+            src={finalMediaUrl}
+            controls
+            muted
+            loop
+            style={{ maxWidth: '100%', maxHeight: '500px', display: 'block', margin: '10px 0' }}
+        />
+        ) : finalMediaUrl ? (
+        <img 
+            src={finalMediaUrl} 
+            alt="Post content" 
+            style={{ maxWidth: '100%', maxHeight: '500px', display: 'block', margin: '10px 0' }}
+            onError={(e) => { e.target.style.display = 'none'; }} // Hides broken images
+        />
+        ) : null}
+        {/* ----------------------------------- */}
+
         <div className="post-actions">
           <button className="action-btn">
             <span>💬</span>
