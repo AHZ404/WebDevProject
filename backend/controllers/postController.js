@@ -160,5 +160,29 @@ const getPostById = async (req, res) => {
     res.status(200).json(post);
   } catch (error) { res.status(500).json({ message: "Server error" }); }
 };
+// CORRECTED searchPosts function in postController.js
 
-module.exports = { getAllPosts, createPost, getPostsByUser, votePost, getPostById };
+const searchPosts = async (req, res) => {
+    try {
+        const { q } = req.query;
+
+        if (!q) {
+            return res.status(400).json({ message: "Search query is required" });
+        }
+
+        const posts = await Post.find({
+        $or: [
+            { title: { $regex: q, $options: 'i' } },
+            { content: { $regex: q, $options: 'i' } },
+            { community: { $regex: q, $options: 'i' } }
+        ]
+         }).sort({ createdAt: -1 });
+
+        // Removed the duplicate 'res.json(posts)' line.
+        res.status(200).json(posts);
+    } catch (error) {
+        console.error("Error in searchPosts:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+module.exports = { getAllPosts, createPost, getPostsByUser, votePost, getPostById , searchPosts };

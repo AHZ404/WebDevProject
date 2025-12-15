@@ -10,6 +10,8 @@ import CreateCommunityModal from './components/CreateCommunityModal';
 import Community from './components/Community'; 
 import { API_URL } from "./components/config.jsx";
 import PostDetails from './components/PostDetails';
+import SearchResults from "./components/SearchResults";
+
 
 const App = () => {
   const [posts, setPosts] = useState([]);
@@ -223,6 +225,8 @@ const App = () => {
           <Route path="/r/:communityName" element={<Community currentUser={currentUser} />} />
           <Route path="/u/:username" element={<Profile currentUser={currentUser} />} />
           <Route path="/r/:communityName/comments/:postId" element={<PostDetails currentUser={currentUser} />} />
+          <Route path="/search" element={<SearchResults currentUser={currentUser} />} />
+
         </Routes>
       </div>
     </Router>
