@@ -7,13 +7,16 @@ const {
     createPost, 
     getPostsByUser, 
     votePost, 
-    getPostById 
+    getPostById,
+    searchPosts
 } = require('../controllers/postController'); 
 
 router.get('/', getAllPosts);
+router.get('/search', searchPosts);
 router.post("/create", upload.single("media"), createPost);
 router.get('/user/:username', getPostsByUser); 
 router.put('/:id/vote', votePost);
 router.get('/:id', getPostById); // The new route
+
 
 module.exports = router;
