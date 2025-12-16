@@ -106,7 +106,7 @@ const PostDetails = ({ currentUser }) => {
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="What are your thoughts?"
-                    style={{ width: '100%', height: '100px', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
+                    style={{ width: '100%', height: '100px', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
                   />
                   <div style={{ textAlign: 'right', marginTop: '5px' }}>
                       <button 

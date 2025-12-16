@@ -47,12 +47,10 @@
   width: 100%;
   padding: 10px 16px;
   border: 1px solid #edeff1;
-  border-radius: 20px;
+  border-radius: 25px !important;
   background-color: #f6f7f8;
   font-size: 14px;
-  transition: all 0.2s;
-
-
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
 .search-bar input:focus {
@@ -60,7 +58,7 @@
   border-color: #0079d3;
   background-color: white;
   box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.2);
-  border-radius: 100px;
+  border-radius: 25px !important;
 }
 
 /* Nav Links Container */

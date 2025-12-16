@@ -7,6 +7,7 @@ import Post from './components/Post';
 import RightSidebar from './components/RightSidebar';
 import AuthModal from './components/AuthModal';
 import CreateCommunityModal from './components/CreateCommunityModal';
+import CreatePostModal from './components/CreatePostModal';
 import Community from './components/Community'; 
 import { API_URL } from "./components/config.jsx";
 import PostDetails from './components/PostDetails';
@@ -19,6 +20,7 @@ const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCommunityModal, setShowCommunityModal] = useState(false);
+  const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [sortBy, setSortBy] = useState('hot');
 
@@ -156,7 +158,8 @@ const App = () => {
           currentUser={currentUser} 
           onAuthClick={() => setShowAuthModal(true)} 
           onLogout={handleLogout} 
-          onCreateCommunityClick={() => setShowCommunityModal(true)} 
+          onCreateCommunityClick={() => setShowCommunityModal(true)}
+          onCreatePostClick={() => setShowCreatePostModal(true)}
         />
         
         <AuthModal 
@@ -172,10 +175,23 @@ const App = () => {
           currentUser={currentUser} 
         />
 
+        <CreatePostModal 
+          isOpen={showCreatePostModal} 
+          onClose={() => setShowCreatePostModal(false)} 
+          communities={communities}
+          currentUser={currentUser}
+          refreshPosts={fetchPosts}
+        />
+
         <Routes>
           <Route path="/" element={
             <div className="main-container">
-              <Sidebar onCreatePost={fetchPosts} currentUser={currentUser} communities={communities} />
+              <Sidebar 
+                onCreatePost={fetchPosts} 
+                currentUser={currentUser} 
+                communities={communities}
+                onCreatePostClick={() => setShowCreatePostModal(true)}
+              />
               
               <div className="posts-container">
                 
@@ -222,7 +238,14 @@ const App = () => {
             </div>
           } />
           
-          <Route path="/r/:communityName" element={<Community currentUser={currentUser} />} />
+          <Route path="/r/:communityName" element={
+            <Community 
+              currentUser={currentUser} 
+              onCreatePostClick={() => setShowCreatePostModal(true)}
+              communities={communities}
+              refreshPosts={fetchPosts}
+            />
+          } />
           <Route path="/u/:username" element={<Profile currentUser={currentUser} />} />
           <Route path="/r/:communityName/comments/:postId" element={<PostDetails currentUser={currentUser} />} />
           <Route path="/search" element={<SearchResults currentUser={currentUser} />} />
