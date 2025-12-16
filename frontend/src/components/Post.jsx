@@ -80,7 +80,7 @@ const Post = ({ post, onVote, currentUser }) => {
           onClick={() => handleVote('up')}
           style={getVoteButtonStyle(1)}
         >
-          ▲
+          ️⇧
         </button>
         <div className="vote-count">{votes}</div>
         <button 
@@ -88,7 +88,7 @@ const Post = ({ post, onVote, currentUser }) => {
           onClick={() => handleVote('down')}
           style={getVoteButtonStyle(-1)}
         >
-          ▼
+          ⇩
         </button>
       </div>
       <div className="post-content">

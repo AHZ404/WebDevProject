@@ -111,7 +111,7 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
                       }}
                     >
                       <div className="community-icon">
-                        {community.icon || '📁'}
+                        {community.icon || ''}
                       </div>
                       <div className="suggestion-content">
                         <div className="suggestion-main">r/{cleanCommunityName(community.name)}</div>
@@ -142,7 +142,7 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
                       }}
                     >
                       <div className="community-icon">
-                        📄
+                        
                       </div>
                       <div className="suggestion-content">
                         <div className="suggestion-main">{post.title}</div>
@@ -178,7 +178,7 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
                     if (createPostBtn) createPostBtn.click();
                   }}
                 >
-                  <span className="item-icon">📝</span>
+                  <span className="item-icon"></span>
                   Create Post
                 </div>
                 
