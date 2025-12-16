@@ -2,12 +2,11 @@
 .header {
   background-color: white;
   padding: 0 20px;
-  border-bottom: 1px solid #edeff1;
+  border-bottom: 1px solid #ccc;
   position: sticky;
   top: 0;
   z-index: 100;
   height: 56px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .navbar {
@@ -15,7 +14,7 @@
   align-items: center;
   justify-content: space-between;
   height: 100%;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   gap: 20px;
 }
@@ -25,11 +24,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: transform 0.2s;
-}
-
-.logo:hover {
-  transform: scale(1.05);
 }
 
 .logo img {
@@ -37,48 +31,157 @@
 }
 
 .logo span {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: bold;
   color: #ff4500;
-  letter-spacing: -0.5px;
 }
 
 /* Search Bar */
 .search-bar {
   flex: 1;
-  max-width: 650px;
-  position: relative;
+  max-width: 600px;
 }
 
 .search-bar input {
   width: 100%;
-  padding: 12px 20px;
+  padding: 10px 16px;
   border: 1px solid #edeff1;
-  border-radius: 30px;
+  border-radius: 20px;
   background-color: #f6f7f8;
   font-size: 14px;
-  transition: all 0.3s ease;
-  font-family: inherit;
-}
-
-.search-bar input:hover {
-  background-color: #ffffff;
-  border-color: #d7dadc;
+  transition: all 0.2s;
 }
 
 .search-bar input:focus {
   outline: none;
   border-color: #0079d3;
   background-color: white;
-  box-shadow: 0 0 0 3px rgba(0, 121, 211, 0.1);
+  box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.2);
 }
 
-.search-bar input::placeholder {
-  color: #878a8c;
+/* Nav Links Container */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
-/* Suggestions Dropdown */
-.suggestions-dropdown {
+/* --- NEW DROPDOWN CSS --- */
+.create-dropdown-container {
+  position: relative; /* Essential for positioning the menu */
+}
+
+.create-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.create-btn:hover {
+  background-color: #f6f7f8;
+  border: 1px solid #edeff1;
+}
+
+.plus-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.create-text {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* The Floating Menu */
+.dropdown-menu {
+  position: absolute;
+  top: 120%; /* Pushes menu down slightly */
+  left: 50%;
+  transform: translateX(-50%); /* Centers menu */
+  background-color: white;
+  border: 1px solid #edeff1;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  width: 180px;
+  padding: 8px 0;
+  z-index: 1000;
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #1c1c1c;
+}
+
+.dropdown-item:hover {
+  background-color: #e9f5fd; /* Reddit Blue Hover */
+}
+
+.item-icon {
+  font-size: 16px;
+}
+/* ------------------------ */
+
+/* User Actions */
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.welcome-text {
+  font-size: 14px;
+  color: #1c1c1c;
+  display: none; /* Hide on small screens */
+}
+
+@media (min-width: 768px) {
+  .welcome-text {
+    display: inline;
+  }
+}
+
+.login-btn {
+  padding: 6px 20px;
+  background: #0079d3;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.login-btn:hover {
+  background: #0070c5;
+}
+
+.logout-btn {
+  padding: 5px 15px;
+  background: transparent;
+  color: #0079d3;
+  border: 1px solid #0079d3;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.logout-btn:hover {
+  background: #f5fafd;
+}
+/* Search Suggestions Dropdown */
+.search-suggestions {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
@@ -89,213 +192,71 @@
   max-height: 450px;
   overflow-y: auto;
   z-index: 1000;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-  animation: slideDown 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.suggestions-section {
+  padding: 8px 0;
 }
 
-.suggestions-header {
-  padding: 10px 16px;
+.suggestions-section:not(:last-child) {
+  border-bottom: 1px solid #edeff1;
+}
+
+.suggestions-section-title {
+  padding: 8px 16px;
   font-weight: 700;
   font-size: 11px;
   color: #7c7c7c;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid #edeff1;
   background-color: #fafafa;
-  position: sticky;
-  top: 0;
 }
 
 .suggestion-item {
   padding: 12px 16px;
   cursor: pointer;
-  border-bottom: 1px solid #f6f7f8;
   display: flex;
   align-items: center;
-  gap: 10px;
-  transition: all 0.2s ease;
+  gap: 12px;
+  transition: background-color 0.2s;
 }
 
 .suggestion-item:hover {
   background-color: #f6f7f8;
-  padding-left: 20px;
 }
 
-.suggestion-item:last-child {
-  border-bottom: none;
-  border-radius: 0 0 8px 8px;
-}
-
-/* Nav Links Container */
-.nav-links {
+.community-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #0079d3, #00a6ed);
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
-/* Create Dropdown */
-.create-dropdown-container {
-  position: relative;
+.suggestion-content {
+  flex: 1;
+  min-width: 0;
 }
 
-.create-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: transparent;
-  border: 1px solid #edeff1;
-  padding: 8px 16px;
-  border-radius: 24px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.suggestion-main {
   font-weight: 600;
-}
-
-.create-btn:hover {
-  background-color: #f6f7f8;
-  border-color: #d7dadc;
-  transform: translateY(-1px);
-}
-
-.create-btn:active {
-  transform: translateY(0);
-}
-
-.plus-icon {
-  font-size: 18px;
-  line-height: 1;
-  font-weight: 300;
-}
-
-.create-text {
   font-size: 14px;
   color: #1c1c1c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Dropdown Menu */
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background-color: white;
-  border: 1px solid #edeff1;
-  border-radius: 8px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-  width: 200px;
-  padding: 8px 0;
-  z-index: 1000;
-  animation: slideDown 0.2s ease;
-}
-
-.dropdown-item {
-  padding: 12px 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: #1c1c1c;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.dropdown-item:hover {
-  background-color: #f6f7f8;
-  padding-left: 20px;
-}
-
-.item-icon {
-  font-size: 18px;
-}
-
-/* Auth Buttons */
-.login-btn {
-  padding: 8px 24px;
-  background: linear-gradient(to right, #0079d3, #0066b3);
-  color: white;
-  border: none;
-  border-radius: 24px;
-  font-weight: 700;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 121, 211, 0.2);
-}
-
-.login-btn:hover {
-  background: linear-gradient(to right, #0066b3, #005a9e);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 121, 211, 0.3);
-}
-
-.login-btn:active {
-  transform: translateY(0);
-}
-
-.logout-btn {
-  padding: 8px 20px;
-  background: transparent;
-  color: #0079d3;
-  border: 2px solid #0079d3;
-  border-radius: 24px;
-  font-weight: 700;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.logout-btn:hover {
-  background: #0079d3;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 121, 211, 0.2);
-}
-
-.logout-btn:active {
-  transform: translateY(0);
-}
-
-/* Scrollbar for suggestions */
-.suggestions-dropdown::-webkit-scrollbar {
-  width: 8px;
-}
-
-.suggestions-dropdown::-webkit-scrollbar-track {
-  background: #f6f7f8;
-  border-radius: 0 8px 8px 0;
-}
-
-.suggestions-dropdown::-webkit-scrollbar-thumb {
-  background: #d7dadc;
-  border-radius: 4px;
-}
-
-.suggestions-dropdown::-webkit-scrollbar-thumb:hover {
-  background: #c4c6c8;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .create-text {
-    display: none;
-  }
-  
-  .search-bar {
-    max-width: 300px;
-  }
-  
-  .navbar {
-    gap: 10px;
-  }
+.suggestion-sub {
+  font-size: 12px;
+  color: #7c7c7c;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

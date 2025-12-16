@@ -59,6 +59,14 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
     }
   };
 
+  const handleSuggestionClick = (e, path) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSearchTerm('');
+    setShowSuggestions(false);
+    navigate(path);
+  };
+
   return (
     <header className="header">
       <nav className="navbar">
@@ -70,7 +78,7 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
           <span>reddit</span>
         </Link>
         
-        {/* SEARCH BAR WITH AUTOCOMPLETE */}
+        {/* SEARCH BAR WITH SUGGESTIONS */}
         <div className="search-bar" style={{ position: 'relative' }}>
           <input 
             type="text" 
@@ -78,63 +86,60 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleSearchSubmit}
-            onFocus={() => setShowSuggestions(true)}
+            onFocus={() => searchTerm && setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           />
           
           {/* SUGGESTIONS DROPDOWN */}
           {showSuggestions && searchTerm && (suggestions.posts.length > 0 || suggestions.communities.length > 0) && (
-            <div className="suggestions-dropdown">
+            <div className="search-suggestions">
               
               {/* COMMUNITIES SECTION */}
               {suggestions.communities.length > 0 && (
-                <>
-                  <div className="suggestions-header">Communities</div>
+                <div className="suggestions-section">
+                  <div className="suggestions-section-title">Communities</div>
                   {suggestions.communities.map(community => (
                     <div
                       key={community._id}
                       className="suggestion-item"
-                      onClick={() => {
-                        navigate(`/r/${community.name}`);
-                        setSearchTerm('');
-                        setShowSuggestions(false);
-                      }}
+                      onClick={(e) => handleSuggestionClick(e, `/r/${community.name}`)}
                     >
-                      <span style={{ fontSize: '16px' }}>📁</span>
-                      <div>
-                        <div style={{ fontWeight: 'bold' }}>r/{community.name}</div>
-                        <div style={{ fontSize: '12px', color: '#7c7c7c' }}>
+                      <div className="community-icon">
+                        {community.icon || '📁'}
+                      </div>
+                      <div className="suggestion-content">
+                        <div className="suggestion-main">r/{community.name}</div>
+                        <div className="suggestion-sub">
                           {community.members || 0} members
                         </div>
                       </div>
                     </div>
                   ))}
-                </>
+                </div>
               )}
 
               {/* POSTS SECTION */}
               {suggestions.posts.length > 0 && (
-                <>
-                  <div className="suggestions-header">Posts</div>
+                <div className="suggestions-section">
+                  <div className="suggestions-section-title">Posts</div>
                   {suggestions.posts.map(post => (
                     <div
                       key={post._id}
                       className="suggestion-item"
-                      onClick={() => {
-                        navigate(`/r/${post.community}/comments/${post._id}`);
-                        setSearchTerm('');
-                        setShowSuggestions(false);
-                      }}
+                      onClick={(e) => handleSuggestionClick(e, `/r/${post.community}/comments/${post._id}`)}
                     >
-                      <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
-                        {post.title}
+                      <div className="community-icon">
+                        📄
                       </div>
-                      <div style={{ fontSize: '12px', color: '#7c7c7c' }}>
-                        {post.community} • u/{post.username}
+                      <div className="suggestion-content">
+                        <div className="suggestion-main">{post.title}</div>
+                        <div className="suggestion-sub">
+                          {post.community} • u/{post.username}
+                        </div>
                       </div>
                     </div>
                   ))}
-                </>
+                </div>
               )}
             </div>
           )}
@@ -156,11 +161,8 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
                   className="dropdown-item" 
                   onClick={() => {
                     setIsCreateOpen(false);
-                    // Scroll to the CREATE POST button in sidebar and trigger it
                     const createPostBtn = document.querySelector('.sidebar button');
-                    if (createPostBtn) {
-                      createPostBtn.click();
-                    }
+                    if (createPostBtn) createPostBtn.click();
                   }}
                 >
                   <span className="item-icon">📝</span>
@@ -170,12 +172,12 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
                 <div 
                   className="dropdown-item" 
                   onClick={() => {
-                      setIsCreateOpen(false);
-                      if (currentUser) {
-                        onCreateCommunityClick();
-                      } else {
-                        onAuthClick();
-                      }
+                    setIsCreateOpen(false);
+                    if (currentUser) {
+                      onCreateCommunityClick();
+                    } else {
+                      onAuthClick();
+                    }
                   }}
                 >
                   <span className="item-icon">r/</span>
@@ -192,19 +194,12 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
                   Welcome, {currentUser.username || currentUser}
                 </span>
               </Link>
-
-              <button 
-                className="logout-btn"
-                onClick={onLogout}
-              >
+              <button className="logout-btn" onClick={onLogout}>
                 Log Out
               </button>
             </div>
           ) : (
-            <button 
-              className="login-btn"
-              onClick={onAuthClick}
-            >
+            <button className="login-btn" onClick={onAuthClick}>
               Log In
             </button>
           )}
