@@ -1,14 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_URL } from './config';
 
 const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [privacyMode, setPrivacyMode] = useState('public'); // Default to public
+  const [privacyMode, setPrivacyMode] = useState('public');
   const [isOver18, setIsOver18] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // ✅ 1. Re-added missing state for images
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [bannerFile, setBannerFile] = useState(null);
+  const [bannerPreview, setBannerPreview] = useState(null);
+
+  // Clean up previews to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
+      if (bannerPreview) URL.revokeObjectURL(bannerPreview);
+    };
+  }, [logoPreview, bannerPreview]);
+
   if (!isOpen) return null;
+
+  // ✅ 2. Re-added handlers for file inputs
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleBannerChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBannerFile(file);
+      setBannerPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,17 +47,21 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
 
     setLoading(true);
     try {
+      // ✅ 3. Switched back to FormData to fix the "req.body" error and allow image uploads
+      const formData = new FormData();
+      formData.append('name', name); // Do not add r/ here, let backend or UI handle display
+      formData.append('description', description);
+      formData.append('privacyMode', privacyMode);
+      formData.append('isOver18', isOver18);
+      formData.append('username', currentUser.username || currentUser);
+      
+      if (logoFile) formData.append('logo', logoFile);
+      if (bannerFile) formData.append('banner', bannerFile);
+
       const response = await fetch(`${API_URL}/subreddits`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            name: `r/${name}`, 
-            description,
-            privacyMode, 
-            isOver18,
-            // <--- UPDATED: Send the username correctly
-            username: currentUser.username || currentUser 
-        })
+        // ❗ Remove 'Content-Type': 'application/json' when using FormData
+        body: formData 
       });
 
       const data = await response.json();
@@ -39,6 +74,10 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
         setDescription('');
         setPrivacyMode('public');
         setIsOver18(false);
+        setLogoFile(null);
+        setLogoPreview(null);
+        setBannerFile(null);
+        setBannerPreview(null);
       } else {
         alert(data.message || "Failed to create community");
       }
@@ -78,10 +117,14 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
     textarea: {
       width: '100%', border: '1px solid #EDEFF1', borderRadius: '4px', padding: '10px', minHeight: '100px', marginBottom: '20px', fontFamily: 'inherit', resize: 'vertical'
     },
+    // ✅ Added missing styles for image section
+    imageUploadSection: { marginBottom: '20px' },
+    uploadButton: {
+      display: 'inline-block', padding: '6px 12px', borderRadius: '20px', border: '1px solid #0079d3', color: '#0079d3', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', marginBottom: '10px'
+    },
     radioGroup: { marginBottom: '20px' },
     radioOption: { display: 'flex', alignItems: 'flex-start', marginBottom: '15px', cursor: 'pointer' },
     radioLabel: { marginLeft: '8px', fontWeight: '500', fontSize: '14px', color: '#1c1c1c' },
-    subText: { fontSize: '12px', color: '#7c7c7c', marginTop: '2px' },
     footer: {
       padding: '16px 20px', backgroundColor: '#F6F7F8', borderTop: '1px solid #EDEFF1', display: 'flex', justifyContent: 'flex-end', gap: '10px', borderRadius: '0 0 12px 12px'
     },
@@ -132,9 +175,67 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
                 />
               </div>
 
+              <div style={styles.imageUploadSection}>
+                <label style={styles.label}>Community Logo (Optional)</label>
+                <p style={{ fontSize: '12px', color: '#7c7c7c', marginBottom: '10px' }}>
+                  Upload a square image for your community icon
+                </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                  style={{ display: 'none' }}
+                  id="logo-upload"
+                />
+                <label htmlFor="logo-upload" style={styles.uploadButton}>
+                  Choose Logo
+                </label>
+                {logoPreview && (
+                  <div>
+                    <img src={logoPreview} alt="Logo preview" style={{ maxHeight: '80px', width: '80px', objectFit: 'cover', borderRadius: '50%' }} />
+                    <button
+                      type="button"
+                      onClick={() => { setLogoFile(null); setLogoPreview(null); }}
+                      style={{ marginLeft: '10px', fontSize: '12px', color: '#ff4500', cursor: 'pointer', border: 'none', background: 'none' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div style={styles.imageUploadSection}>
+                <label style={styles.label}>Community Banner (Optional)</label>
+                <p style={{ fontSize: '12px', color: '#7c7c7c', marginBottom: '10px' }}>
+                  Upload a wide banner image (recommended 1920x384px)
+                </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBannerChange}
+                  style={{ display: 'none' }}
+                  id="banner-upload"
+                />
+                <label htmlFor="banner-upload" style={styles.uploadButton}>
+                  Choose Banner
+                </label>
+                {bannerPreview && (
+                  <div>
+                    <img src={bannerPreview} alt="Banner preview" style={{ maxHeight: '100px', maxWidth: '100%', objectFit: 'cover', borderRadius: '4px' }} />
+                    <button
+                      type="button"
+                      onClick={() => { setBannerFile(null); setBannerPreview(null); }}
+                      style={{ marginLeft: '10px', fontSize: '12px', color: '#ff4500', cursor: 'pointer', border: 'none', background: 'none' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <label style={styles.label}>Community type</label>
               <div style={styles.radioGroup}>
-                {/* PUBLIC OPTION */}
+                {/* PUBLIC */}
                 <div style={styles.radioOption} onClick={() => setPrivacyMode('public')}>
                   <input 
                     type="radio" 
@@ -143,14 +244,14 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
                     style={{ marginTop: '3px' }}
                   />
                   <div style={{marginLeft: '8px'}}>
-                     <div style={{fontWeight: '500', fontSize: '14px'}}>
+                      <div style={{fontWeight: '500', fontSize: '14px'}}>
                         <span style={{marginRight: '5px'}}>Public</span> 
                         <span style={{fontSize: '10px', color: '#878A8C'}}>Anyone can view, post, and comment to this community</span>
-                     </div>
+                      </div>
                   </div>
                 </div>
 
-                {/* RESTRICTED OPTION */}
+                {/* RESTRICTED */}
                 <div style={styles.radioOption} onClick={() => setPrivacyMode('restricted')}>
                   <input 
                     type="radio" 
@@ -159,10 +260,10 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
                     style={{ marginTop: '3px' }}
                   />
                   <div style={{marginLeft: '8px'}}>
-                     <div style={{fontWeight: '500', fontSize: '14px'}}>
+                      <div style={{fontWeight: '500', fontSize: '14px'}}>
                         <span style={{marginRight: '5px'}}>Restricted</span> 
                         <span style={{fontSize: '10px', color: '#878A8C'}}>Anyone can view, but only approved users can contribute</span>
-                     </div>
+                      </div>
                   </div>
                 </div>
               </div>
@@ -175,7 +276,7 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
                     checked={isOver18} 
                     readOnly 
                     style={{ marginTop: '3px', width: '16px', height: '16px' }}
-                 />
+                  />
                  <div style={{marginLeft: '8px'}}>
                     <div style={{backgroundColor: '#ff585b', color: 'white', padding: '0 4px', borderRadius: '2px', fontSize: '10px', display: 'inline-block', marginRight: '5px', fontWeight: 'bold'}}>NSFW</div>
                     <span style={{fontSize: '14px', fontWeight: '500'}}>18+ year old community</span>
@@ -187,13 +288,16 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
             <div style={styles.rightCol}>
                <h4 style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#7c7c7c', textTransform: 'uppercase', fontWeight: 'bold' }}>Preview</h4>
                <div style={{ backgroundColor: 'white', borderRadius: '4px', border: '1px solid #ccc', overflow: 'hidden' }}>
-                  {/* Fake Banner */}
-                  <div style={{ height: '32px', backgroundColor: '#0079d3' }}></div>
+                  {/* Banner Preview */}
+                  <div style={{ height: '32px', backgroundColor: '#0079d3', backgroundImage: bannerPreview ? `url(${bannerPreview})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
                   
                   <div style={{ padding: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', marginTop: '-20px', marginBottom: '8px' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0079d3', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>r/</div>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', overflow: 'hidden' }}>
+                            {logoPreview ? 
+                              <img src={logoPreview} alt="" style={{width: '100%', height: '100%', objectFit: 'cover'}} /> :
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#0079d3', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>r/</div>
+                            }
                         </div>
                         <div style={{ marginLeft: '8px', marginTop: '14px' }}>
                             <div style={{ fontWeight: 'bold', fontSize: '14px' }}>r/{name || 'name'}</div>
