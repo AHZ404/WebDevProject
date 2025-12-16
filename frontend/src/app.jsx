@@ -194,28 +194,19 @@ const App = () => {
               />
               
               <div className="posts-container">
-                
-                {/* 5. NEW SORTING DROPDOWN UI */}
-                <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#1c1c1c' }}>Sort by:</span>
+                <div className="posts-header">
                     <select 
+                        className="sort-dropdown"
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        style={{ 
-                            padding: '6px 12px', 
-                            borderRadius: '20px', 
-                            border: '1px solid #ccc',
-                            fontWeight: 'bold',
-                            color: '#0079d3',
-                            cursor: 'pointer',
-                            outline: 'none'
-                        }}
                     >
-                        <option value="hot">🔥 Hot</option>
-                        <option value="new">✨ New</option>
-                        <option value="old">📅 Old</option>
-                        
+                        <option value="hot">Best</option>
+                        <option value="new">New</option>
+                        <option value="old">Old</option>
                     </select>
+                    <button className="view-toggle" title="Change view">
+                        <span>⊞</span>
+                    </button>
                 </div>
 
                 {loadingPosts ? (

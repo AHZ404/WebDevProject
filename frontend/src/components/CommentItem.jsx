@@ -105,6 +105,17 @@ const CommentItem = ({ comment, postId, currentUser }) => {
         <div style={{ color: userVote !== 0 ? (userVote === 1 ? '#ff4500' : '#7193ff') : 'inherit' }}>{votes}</div>
         <div style={{ cursor: 'pointer', color: getVoteColor(-1) }} onClick={() => handleVote('down')}>⬇</div>
         <div style={{ cursor: 'pointer', marginLeft: '10px' }} onClick={() => setShowReplyForm(!showReplyForm)}>Reply</div>
+        {/* Delete button for comment owner */}
+        {currentUser && (currentUser.username || currentUser) === (comment.author?.username) && (
+          <div style={{ cursor: 'pointer', marginLeft: '10px', color: '#ff585b' }} onClick={async () => {
+            if (!confirm('Delete this comment?')) return;
+            try {
+              const username = currentUser.username || currentUser;
+              const res = await fetch(`${API_URL}/comments/${comment._id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
+              if (res.ok) window.location.reload(); else { const data = await res.json(); alert(data.message || 'Failed to delete'); }
+            } catch (err) { console.error(err); alert('Failed to delete'); }
+          }}>Delete</div>
+        )}
       </div>
 
       {showReplyForm && (

@@ -140,7 +140,7 @@ const PostDetails = ({ currentUser }) => {
        
        <div className="right-sidebar">
           <div className="community-card">
-              <h3>About r/{post.community}</h3>
+              <h3>About r/{post.community ? (post.community.startsWith('r/') ? post.community.substring(2) : post.community) : ''}</h3>
               <p>Welcome to the discussion!</p>
           </div>
        </div>

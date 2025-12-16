@@ -13,13 +13,20 @@ const Profile = ({ currentUser }) => {
     
     // Bio Editing
     const [isEditing, setIsEditing] = useState(false);
-    const [bioText, setBioText] = useState(''); 
+    const [bioText, setBioText] = useState('');
+    
+    // Avatar/Banner Upload
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(null);
+    const [bannerFile, setBannerFile] = useState(null);
+    const [bannerPreview, setBannerPreview] = useState(null);
 
     // Tabs & Data
     const [activeTab, setActiveTab] = useState('posts'); // 'posts' or 'comments'
     const [userPosts, setUserPosts] = useState([]); 
     const [userComments, setUserComments] = useState([]); 
     const [postsLoading, setPostsLoading] = useState(false);
+    const [adminActions, setAdminActions] = useState([]); // admin audit log
 
     const isOwner = currentUser && currentUser.toLowerCase() === username.toLowerCase();
 
@@ -28,12 +35,30 @@ const Profile = ({ currentUser }) => {
         const fetchProfile = async () => {
             setLoading(true);
             try {
+                console.log(`📥 Fetching profile for: ${username}`);
                 const response = await fetch(`${API_URL}/users/${username}`);
                 const data = await response.json();
+                console.log('Profile data received:', data);
                 if (!response.ok) throw new Error(data.message);
                 setProfileData(data);
-                setBioText(data.profile.bio || ''); 
+                setBioText(data.profile.bio || '');
+                console.log('Avatar from DB:', data.profile.avatar);
+                console.log('Banner from DB:', data.profile.banner);
+
+                // If profile belongs to an admin, fetch their admin action history
+                if (data.role === 'admin') {
+                    (async () => {
+                        try {
+                            const res = await fetch(`${API_URL}/admin/actions/${username}`);
+                            const actions = await res.json();
+                            if (res.ok) setAdminActions(actions);
+                        } catch (err) {
+                            console.error('Failed to fetch admin actions:', err);
+                        }
+                    })();
+                }
             } catch (err) {
+                console.error('❌ Error fetching profile:', err);
                 setError(err.message);
             } finally {
                 setLoading(false);
@@ -66,21 +91,70 @@ const Profile = ({ currentUser }) => {
         if (username) fetchData();
     }, [username, activeTab]); 
 
-    // 3. HANDLE SAVE BIO
+    // 3. HANDLE SAVE BIO AND PROFILE IMAGES
     const handleSaveBio = async () => {
         try {
+            const formData = new FormData();
+            formData.append('bio', bioText);
+            if (avatarFile) {
+                console.log('📤 Uploading avatar:', avatarFile.name);
+                formData.append('avatar', avatarFile);
+            }
+            if (bannerFile) {
+                console.log('📤 Uploading banner:', bannerFile.name);
+                formData.append('banner', bannerFile);
+            }
+
+            console.log('🔄 Sending PATCH request to:', `${API_URL}/users/${username}`);
             const response = await fetch(`${API_URL}/users/${username}`, {
-                method: 'PATCH', 
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bio: bioText }), 
+                method: 'PATCH',
+                body: formData
             });
             const data = await response.json();
+            console.log('📥 Response data:', data);
+            
             if (response.ok) {
-                setProfileData(prev => ({ ...prev, profile: { ...prev.profile, bio: data.newBio } }));
+                console.log('✅ Profile saved successfully');
+                console.log('Avatar path:', data.avatar);
+                console.log('Banner path:', data.banner);
+                
+                setProfileData(prev => ({ 
+                    ...prev, 
+                    profile: { 
+                        ...prev.profile, 
+                        bio: data.newBio,
+                        avatar: data.avatar || prev.profile.avatar,
+                        banner: data.banner || prev.profile.banner
+                    } 
+                }));
                 setIsEditing(false);
+                setAvatarFile(null);
+                setAvatarPreview(null);
+                setBannerFile(null);
+                setBannerPreview(null);
+            } else {
+                console.error('❌ Error response:', data);
+                alert('Failed to save profile: ' + (data.message || 'Unknown error'));
             }
         } catch (error) {
-            alert("Failed to save bio");
+            console.error('❌ Network error:', error);
+            alert("Failed to save profile: " + error.message);
+        }
+    };
+
+    const handleAvatarChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setAvatarFile(file);
+            setAvatarPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleBannerChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setBannerFile(file);
+            setBannerPreview(URL.createObjectURL(file));
         }
     };
 
@@ -93,35 +167,93 @@ const Profile = ({ currentUser }) => {
             {/* --- LEFT COLUMN --- */}
             <div style={styles.mainContent}>
                 
+                {/* BANNER */}
+                {(bannerPreview || profileData.profile.banner) && (
+                    <div style={{ 
+                        height: '150px', 
+                        background: '#f0f0f0', 
+                        marginBottom: '10px',
+                        borderRadius: '4px',
+                        backgroundImage: bannerPreview || (profileData.profile.banner ? `url(${API_URL}/${profileData.profile.banner})` : 'none'),
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                    }} />
+                )}
+                
                 {/* 1. Header Card */}
                 <div style={styles.headerCard}>
                     <div style={styles.headerTop}>
                          {/* Avatar Placeholder */}
-                         <div style={styles.avatar}>
-                            {profileData.username[0].toUpperCase()}
+                         <div style={{...styles.avatar, backgroundImage: avatarPreview || profileData.profile.avatar ? `url(${avatarPreview || (profileData.profile.avatar ? `${API_URL}/${profileData.profile.avatar}` : '')})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', fontSize: avatarPreview || profileData.profile.avatar ? '0' : '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
+                            {!avatarPreview && !profileData.profile.avatar && profileData.username[0].toUpperCase()}
+                            {isOwner && (
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleAvatarChange} 
+                                    style={{ display: 'none' }} 
+                                    id="avatar-upload"
+                                />
+                            )}
                          </div>
                          <div>
                             <h1 style={styles.usernameTitle}>u/{profileData.username}</h1>
                             <div style={styles.cakeDay}>
                                 Cake Day: {new Date(profileData.profile.cakeDay).toLocaleDateString()}
                             </div>
+                            {isOwner && (
+                                <label htmlFor="avatar-upload" style={{ cursor: 'pointer', color: '#0079d3', fontSize: '12px', fontWeight: 'bold', marginTop: '8px', display: 'inline-block' }}>
+                                    Change Avatar
+                                </label>
+                            )}
                          </div>
                     </div>
                     
                     <h3 style={styles.sectionTitle}>About Me</h3>
                     
-                    {isEditing ? (
-                        <div style={styles.bioEditContainer}>
-                            <textarea 
-                                value={bioText} 
-                                onChange={(e) => setBioText(e.target.value)}
-                                style={{...styles.textarea, whiteSpace: 'pre-wrap', wordWrap: 'break-word'}}
-                            />
+
+
+
+
+                    {isEditing ? ( <>
+
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Profile Picture</label>
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleAvatarChange} 
+                                    style={{ marginBottom: '10px' }}
+                                />
+                                {avatarPreview && (
+                                    <div>
+                                        <img src={avatarPreview} alt="Avatar preview" style={{ maxHeight: '80px', width: '80px', borderRadius: '50%', objectFit: 'cover' }} />
+                                        <button type="button" onClick={() => { setAvatarFile(null); setAvatarPreview(null); }} style={{ marginLeft: '10px', color: '#ff4500', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Profile Banner</label>
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleBannerChange} 
+                                    style={{ marginBottom: '10px' }}
+                                />
+                                {bannerPreview && (
+                                    <div>
+                                        <img src={bannerPreview} alt="Banner preview" style={{ maxHeight: '100px', maxWidth: '100%', borderRadius: '4px', objectFit: 'cover' }} />
+                                        <button type="button" onClick={() => { setBannerFile(null); setBannerPreview(null); }} style={{ marginLeft: '10px', color: '#ff4500', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
+                                    </div>
+                                )}
+                            </div>
+                            
                             <div style={styles.buttonGroup}>
                                 <button onClick={handleSaveBio} style={styles.saveBtn}>Save</button>
                                 <button onClick={() => setIsEditing(false)} style={styles.cancelBtn}>Cancel</button>
                             </div>
-                        </div>
+                        </>
                     ) : (
                         <div>
                             <p style={{...styles.bioText, whiteSpace: 'pre-wrap', wordWrap: 'break-word'}}>{profileData.profile.bio || "No bio yet."}</p>
@@ -133,6 +265,28 @@ const Profile = ({ currentUser }) => {
                         </div>
                     )}
                 </div>
+
+                {/* --- ADMIN ACTIONS (visible when this profile is an admin) --- */}
+                {profileData.role === 'admin' && (
+                  <div style={{ marginTop: '20px' }}>
+                    <h3 style={styles.sectionTitle}>Admin Action History</h3>
+                    {adminActions.length === 0 ? (
+                      <div style={{ color: '#666', fontSize: '13px' }}>No admin actions recorded yet.</div>
+                    ) : (
+                      <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+                        {adminActions.map(act => (
+                          <li key={act._id} style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
+                            <div style={{ fontSize: '13px', color: '#333' }}>
+                              <strong style={{ textTransform: 'capitalize' }}>{act.actionType}</strong> {act.targetType} — {act.targetSummary}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#777' }}>{new Date(act.createdAt).toLocaleString()}</div>
+                            {act.details && <div style={{ fontSize: '12px', color: '#555', marginTop: '4px' }}>{act.details}</div>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
 
                 {/* 2. TAB NAVIGATION */}
                 <div style={styles.tabsContainer}>
@@ -198,7 +352,9 @@ const Profile = ({ currentUser }) => {
                                 )}
                                 
                                 <span style={styles.metaDivider}>•</span>
-                                <span style={styles.communityName}>r/{comment.post?.community}</span>
+                                <span style={styles.communityName}>
+                                  r/{comment.post?.community ? (comment.post.community.startsWith('r/') ? comment.post.community.substring(2) : comment.post.community) : ''}
+                                </span>
                                 <span style={styles.metaDivider}>•</span>
                                 <span style={styles.timestamp}>{new Date(comment.createdAt).toLocaleDateString()}</span>
                               </span>

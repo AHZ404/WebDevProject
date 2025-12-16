@@ -51,6 +51,7 @@ const userSchema = mongoose.Schema({
   joinedSubreddits: [{ type: ObjectId, ref: 'Subreddit' }],
   isVerified: { type: Boolean, default: false },
   isBanned: { type: Boolean, default: false },
+  role: { type: String, enum: ['user','admin'], default: 'user' },
   createdAt: {
     type: Date,
     default: Date.now

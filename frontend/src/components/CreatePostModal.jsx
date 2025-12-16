@@ -3,10 +3,16 @@ import axios from 'axios';
 import { API_URL } from './config.jsx';
 
 const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refreshPosts, currentCommunity = null }) => {
+  // Helper function to clean community name (remove r/ if present)
+  const cleanCommunityName = (name) => {
+    if (!name) return '';
+    return name.startsWith('r/') ? name.substring(2) : name;
+  };
+
   const [newPost, setNewPost] = useState({
     title: '',
     content: '',
-    community: currentCommunity || (communities[0]?.name || 'r/javascript')
+    community: currentCommunity ? cleanCommunityName(currentCommunity) : (communities[0]?.name ? cleanCommunityName(communities[0].name) : 'javascript')
   });
 
   const [loading, setLoading] = useState(false);
@@ -16,7 +22,7 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
   // Update community when currentCommunity prop changes
   useEffect(() => {
     if (currentCommunity) {
-      setNewPost(prev => ({ ...prev, community: currentCommunity }));
+      setNewPost(prev => ({ ...prev, community: cleanCommunityName(currentCommunity) }));
     }
   }, [currentCommunity]);
 
@@ -53,7 +59,8 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
 
     const formData = new FormData();
     formData.append('username', currentUser.username || currentUser);
-    formData.append('community', newPost.community);
+    // Ensure community name doesn't have r/ prefix
+    formData.append('community', cleanCommunityName(newPost.community));
     formData.append('title', newPost.title);
     formData.append('content', newPost.content);
     if (mediaFile) {
@@ -77,7 +84,7 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
       setNewPost({
         title: '',
         content: '',
-        community: currentCommunity || (communities[0]?.name || 'r/javascript')
+        community: currentCommunity ? cleanCommunityName(currentCommunity) : (communities[0]?.name ? cleanCommunityName(communities[0].name) : 'javascript')
       });
       setMediaFile(null);
       setMediaPreview(null);
@@ -100,7 +107,7 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
     setNewPost({
       title: '',
       content: '',
-      community: currentCommunity || (communities[0]?.name || 'r/javascript')
+      community: currentCommunity ? cleanCommunityName(currentCommunity) : (communities[0]?.name ? cleanCommunityName(communities[0].name) : 'javascript')
     });
     setMediaFile(null);
     setMediaPreview(null);
@@ -260,14 +267,17 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
             <label style={styles.label}>Community *</label>
             <select
               value={newPost.community}
-              onChange={(e) => setNewPost({ ...newPost, community: e.target.value })}
+              onChange={(e) => setNewPost({ ...newPost, community: cleanCommunityName(e.target.value) })}
               style={styles.select}
             >
-              {communities.map((comm) => (
-                <option key={comm.id} value={comm.name}>
-                  {comm.name}
-                </option>
-              ))}
+              {communities.map((comm) => {
+                const cleanName = cleanCommunityName(comm.name);
+                return (
+                  <option key={comm.id} value={cleanName}>
+                    r/{cleanName}
+                  </option>
+                );
+              })}
             </select>
           </div>
 

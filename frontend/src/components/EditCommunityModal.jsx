@@ -1,30 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from './config';
 
-const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser }) => {
-  const [name, setName] = useState('');
+const EditCommunityModal = ({ isOpen, onClose, subreddit, currentUser, onUpdate }) => {
   const [description, setDescription] = useState('');
-  const [privacyMode, setPrivacyMode] = useState('public');
-  const [isOver18, setIsOver18] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ 1. Re-added missing state for images
+  // State for images
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
 
+  // Initialize form with existing data when modal opens or subreddit changes
+  useEffect(() => {
+    if (subreddit) {
+      setDescription(subreddit.description || '');
+      setLogoPreview(subreddit.logo ? `${API_URL}/${subreddit.logo}` : null);
+      setBannerPreview(subreddit.banner ? `${API_URL}/${subreddit.banner}` : null);
+      setLogoFile(null);
+      setBannerFile(null);
+    }
+  }, [subreddit, isOpen]);
+
   // Clean up previews to prevent memory leaks
   useEffect(() => {
     return () => {
-      if (logoPreview) URL.revokeObjectURL(logoPreview);
-      if (bannerPreview) URL.revokeObjectURL(bannerPreview);
+      if (logoPreview && logoPreview.startsWith('blob:')) URL.revokeObjectURL(logoPreview);
+      if (bannerPreview && bannerPreview.startsWith('blob:')) URL.revokeObjectURL(bannerPreview);
     };
   }, [logoPreview, bannerPreview]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !subreddit) return null;
 
-  // ✅ 2. Re-added handlers for file inputs
+  // Handlers for file inputs
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -43,54 +51,38 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name) return alert("Name is required");
 
     setLoading(true);
     try {
-      // ✅ 3. Switched back to FormData to fix the "req.body" error and allow image uploads
       const formData = new FormData();
-      formData.append('name', name); // Do not add r/ here, let backend or UI handle display
+      formData.append('name', subreddit.name);
       formData.append('description', description);
-      formData.append('privacyMode', privacyMode);
-      formData.append('isOver18', isOver18);
       formData.append('username', currentUser.username || currentUser);
       
       if (logoFile) formData.append('logo', logoFile);
       if (bannerFile) formData.append('banner', bannerFile);
 
-      console.log('=== COMMUNITY CREATION FORM ===');
-      console.log('Name:', name);
+      console.log('=== COMMUNITY UPDATE FORM ===');
+      console.log('Name:', subreddit.name);
       console.log('Description:', description);
-      console.log('Privacy Mode:', privacyMode);
-      console.log('Is Over 18:', isOver18);
       console.log('Username:', currentUser.username || currentUser);
       console.log('Has logo:', !!logoFile);
       console.log('Has banner:', !!bannerFile);
       console.log('===============================');
 
-      const response = await fetch(`${API_URL}/subreddits`, {
-        method: 'POST',
-        // ❗ Remove 'Content-Type': 'application/json' when using FormData
+      const response = await fetch(`${API_URL}/subreddits/${encodeURIComponent(subreddit.name)}`, {
+        method: 'PUT',
         body: formData 
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        refreshCommunities();
+        if (onUpdate) onUpdate(data);
         onClose();
-        // Reset Form
-        setName('');
-        setDescription('');
-        setPrivacyMode('public');
-        setIsOver18(false);
-        setLogoFile(null);
-        setLogoPreview(null);
-        setBannerFile(null);
-        setBannerPreview(null);
       } else {
         console.error('❌ Server error:', data);
-        alert(data.message || "Failed to create community");
+        alert(data.message || "Failed to update community");
       }
     } catch (error) {
       console.error('❌ Network error:', error);
@@ -119,31 +111,21 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
     leftCol: { flex: 1.5 },
     rightCol: { flex: 1, backgroundColor: '#F6F7F8', borderRadius: '8px', padding: '15px', height: 'fit-content' },
     label: { fontWeight: '700', fontSize: '14px', marginBottom: '8px', display: 'block', color: '#1c1c1c' },
-    inputContainer: {
-      display: 'flex', alignItems: 'center', border: '1px solid #EDEFF1', borderRadius: '4px', padding: '0 10px', marginBottom: '20px', height: '48px'
-    },
-    input: {
-      border: 'none', outline: 'none', width: '100%', fontSize: '14px', marginLeft: '5px'
-    },
     textarea: {
       width: '100%', border: '1px solid #EDEFF1', borderRadius: '4px', padding: '10px', minHeight: '100px', marginBottom: '20px', fontFamily: 'inherit', resize: 'vertical'
     },
-    // ✅ Added missing styles for image section
     imageUploadSection: { marginBottom: '20px' },
     uploadButton: {
       display: 'inline-block', padding: '6px 12px', borderRadius: '20px', border: '1px solid #0079d3', color: '#0079d3', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', marginBottom: '10px'
     },
-    radioGroup: { marginBottom: '20px' },
-    radioOption: { display: 'flex', alignItems: 'flex-start', marginBottom: '15px', cursor: 'pointer' },
-    radioLabel: { marginLeft: '8px', fontWeight: '500', fontSize: '14px', color: '#1c1c1c' },
     footer: {
       padding: '16px 20px', backgroundColor: '#F6F7F8', borderTop: '1px solid #EDEFF1', display: 'flex', justifyContent: 'flex-end', gap: '10px', borderRadius: '0 0 12px 12px'
     },
     btnCancel: {
       padding: '8px 16px', borderRadius: '99px', border: '1px solid #0079d3', color: '#0079d3', fontWeight: 'bold', background: 'transparent', cursor: 'pointer'
     },
-    btnCreate: {
-      padding: '8px 16px', borderRadius: '99px', border: 'none', backgroundColor: '#0079d3', color: 'white', fontWeight: 'bold', cursor: 'pointer', opacity: name ? 1 : 0.5
+    btnSave: {
+      padding: '8px 16px', borderRadius: '99px', border: 'none', backgroundColor: '#0079d3', color: 'white', fontWeight: 'bold', cursor: 'pointer'
     }
   };
 
@@ -152,7 +134,7 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
       <div style={styles.modal}>
         {/* HEADER */}
         <div style={styles.header}>
-          <h2 style={{ fontSize: '16px', margin: 0 }}>Create a community</h2>
+          <h2 style={{ fontSize: '16px', margin: 0 }}>Edit Community</h2>
           <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: '24px', cursor: 'pointer', color: '#878A8C' }}>×</button>
         </div>
 
@@ -161,25 +143,12 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
             {/* LEFT COLUMN: INPUTS */}
             <div style={styles.leftCol}>
               <div style={{ marginBottom: '15px' }}>
-                <label style={styles.label}>Name</label>
-                <div style={{ marginBottom: '4px', fontSize: '12px', color: '#7c7c7c' }}>
-                  Community names including capitalization cannot be changed.
+                <label style={styles.label}>Community Name</label>
+                <div style={{ padding: '10px', backgroundColor: '#F6F7F8', borderRadius: '4px', color: '#7c7c7c', fontSize: '14px' }}>
+                  r/{subreddit.name}
                 </div>
-                <div style={styles.inputContainer}>
-                  <span style={{ color: '#7c7c7c', fontWeight: 'bold' }}>r/</span>
-                  <input 
-                    style={styles.input} 
-                    value={name} 
-                    onChange={(e) => {
-                      // Remove r/ prefix if user types it
-                      let value = e.target.value;
-                      if (value.startsWith('r/')) {
-                        value = value.substring(2);
-                      }
-                      setName(value);
-                    }} 
-                    maxLength={21}
-                  />
+                <div style={{ fontSize: '12px', color: '#7c7c7c', marginTop: '4px' }}>
+                  Community names cannot be changed.
                 </div>
               </div>
 
@@ -203,20 +172,27 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
                   accept="image/*"
                   onChange={handleLogoChange}
                   style={{ display: 'none' }}
-                  id="logo-upload"
+                  id="logo-upload-edit"
                 />
-                <label htmlFor="logo-upload" style={styles.uploadButton}>
-                  Choose Logo
+                <label htmlFor="logo-upload-edit" style={styles.uploadButton}>
+                  {logoPreview ? 'Change Logo' : 'Choose Logo'}
                 </label>
                 {logoPreview && (
                   <div>
                     <img src={logoPreview} alt="Logo preview" style={{ maxHeight: '80px', width: '80px', objectFit: 'cover', borderRadius: '50%' }} />
                     <button
                       type="button"
-                      onClick={() => { setLogoFile(null); setLogoPreview(null); }}
+                      onClick={() => { 
+                        setLogoFile(null); 
+                        if (subreddit.logo) {
+                          setLogoPreview(`${API_URL}/${subreddit.logo}`);
+                        } else {
+                          setLogoPreview(null);
+                        }
+                      }}
                       style={{ marginLeft: '10px', fontSize: '12px', color: '#ff4500', cursor: 'pointer', border: 'none', background: 'none' }}
                     >
-                      Remove
+                      Remove New
                     </button>
                   </div>
                 )}
@@ -232,73 +208,30 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
                   accept="image/*"
                   onChange={handleBannerChange}
                   style={{ display: 'none' }}
-                  id="banner-upload"
+                  id="banner-upload-edit"
                 />
-                <label htmlFor="banner-upload" style={styles.uploadButton}>
-                  Choose Banner
+                <label htmlFor="banner-upload-edit" style={styles.uploadButton}>
+                  {bannerPreview ? 'Change Banner' : 'Choose Banner'}
                 </label>
                 {bannerPreview && (
                   <div>
                     <img src={bannerPreview} alt="Banner preview" style={{ maxHeight: '100px', maxWidth: '100%', objectFit: 'cover', borderRadius: '4px' }} />
                     <button
                       type="button"
-                      onClick={() => { setBannerFile(null); setBannerPreview(null); }}
+                      onClick={() => { 
+                        setBannerFile(null); 
+                        if (subreddit.banner) {
+                          setBannerPreview(`${API_URL}/${subreddit.banner}`);
+                        } else {
+                          setBannerPreview(null);
+                        }
+                      }}
                       style={{ marginLeft: '10px', fontSize: '12px', color: '#ff4500', cursor: 'pointer', border: 'none', background: 'none' }}
                     >
-                      Remove
+                      Remove New
                     </button>
                   </div>
                 )}
-              </div>
-
-              <label style={styles.label}>Community type</label>
-              <div style={styles.radioGroup}>
-                {/* PUBLIC */}
-                <div style={styles.radioOption} onClick={() => setPrivacyMode('public')}>
-                  <input 
-                    type="radio" 
-                    checked={privacyMode === 'public'} 
-                    readOnly 
-                    style={{ marginTop: '3px' }}
-                  />
-                  <div style={{marginLeft: '8px'}}>
-                      <div style={{fontWeight: '500', fontSize: '14px'}}>
-                        <span style={{marginRight: '5px'}}>Public</span> 
-                        <span style={{fontSize: '10px', color: '#878A8C'}}>Anyone can view, post, and comment to this community</span>
-                      </div>
-                  </div>
-                </div>
-
-                {/* RESTRICTED */}
-                <div style={styles.radioOption} onClick={() => setPrivacyMode('restricted')}>
-                  <input 
-                    type="radio" 
-                    checked={privacyMode === 'restricted'} 
-                    readOnly 
-                    style={{ marginTop: '3px' }}
-                  />
-                  <div style={{marginLeft: '8px'}}>
-                      <div style={{fontWeight: '500', fontSize: '14px'}}>
-                        <span style={{marginRight: '5px'}}>Restricted</span> 
-                        <span style={{fontSize: '10px', color: '#878A8C'}}>Anyone can view, but only approved users can contribute</span>
-                      </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* MATURE CHECKBOX */}
-              <label style={styles.label}>Adult content</label>
-              <div style={styles.radioOption} onClick={() => setIsOver18(!isOver18)}>
-                 <input 
-                    type="checkbox" 
-                    checked={isOver18} 
-                    readOnly 
-                    style={{ marginTop: '3px', width: '16px', height: '16px' }}
-                  />
-                 <div style={{marginLeft: '8px'}}>
-                    <div style={{backgroundColor: '#ff585b', color: 'white', padding: '0 4px', borderRadius: '2px', fontSize: '10px', display: 'inline-block', marginRight: '5px', fontWeight: 'bold'}}>NSFW</div>
-                    <span style={{fontSize: '14px', fontWeight: '500'}}>18+ year old community</span>
-                 </div>
               </div>
             </div>
 
@@ -318,12 +251,12 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
                             }
                         </div>
                         <div style={{ marginLeft: '8px', marginTop: '14px' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '14px' }}>r/{name ? name.replace(/^r\//, '') : 'name'}</div>
+                            <div style={{ fontWeight: 'bold', fontSize: '14px' }}>r/{subreddit.name}</div>
                         </div>
                     </div>
                     
                     <div style={{ fontSize: '12px', color: '#555', marginBottom: '8px' }}>
-                        1 member • 1 online
+                        {subreddit.members || 1} member{subreddit.members !== 1 ? 's' : ''}
                     </div>
                     <div style={{ fontSize: '12px', lineHeight: '1.4', color: '#1c1c1c' }}>
                         {description || "Your community description will appear here."}
@@ -336,8 +269,8 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
           {/* FOOTER */}
           <div style={styles.footer}>
             <button type="button" onClick={onClose} style={styles.btnCancel}>Cancel</button>
-            <button type="submit" style={styles.btnCreate} disabled={loading || !name}>
-              {loading ? "Creating..." : "Create Community"}
+            <button type="submit" style={styles.btnSave} disabled={loading}>
+              {loading ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>
@@ -346,4 +279,4 @@ const CreateCommunityModal = ({ isOpen, onClose, refreshCommunities, currentUser
   );
 };
 
-export default CreateCommunityModal;
+export default EditCommunityModal;

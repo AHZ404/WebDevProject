@@ -56,7 +56,13 @@ const Post = ({ post, onVote, currentUser }) => {
     setUserVote(newUserVote);
   };
 
-  const communityNameClean = post.community ? post.community.replace('r/', '') : 'all';
+  // Helper function to clean community name (remove r/ if present)
+  const cleanCommunityName = (name) => {
+    if (!name) return 'all';
+    return name.startsWith('r/') ? name.substring(2) : name;
+  };
+
+  const communityNameClean = cleanCommunityName(post.community);
 
   // --- NEW: Helper to fix the image URL ---
   const getMediaUrl = (path) => {
@@ -92,9 +98,24 @@ const Post = ({ post, onVote, currentUser }) => {
         </button>
       </div>
       <div className="post-content">
-        <div className="post-header">
-          <span className="community-name">{post.community}</span>
-          <span className="posted-by">Posted by {post.user} {new Date(post.time).toLocaleDateString()}</span>
+        <div className="post-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span className="community-name">r/{communityNameClean}</span>
+            <span style={{ color: '#818384', margin: '0 4px' }}>•</span>
+            <span className="posted-by">{new Date(post.time).toLocaleDateString()}</span>
+          </div>
+          <button 
+            className="action-btn" 
+            style={{ 
+              padding: '4px 8px', 
+              margin: 0,
+              fontSize: '18px',
+              color: '#818384'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            ⋯
+          </button>
         </div>
         
         <Link 
@@ -141,6 +162,30 @@ const Post = ({ post, onVote, currentUser }) => {
           <button className="action-btn">
             <span>⋯</span>
           </button>
+          {/* Delete button for post owner */}
+          {currentUser && (currentUser.username || currentUser) === post.username && (
+            <button className="action-btn" onClick={async () => {
+              if (!confirm('Delete this post?')) return;
+              try {
+                const username = currentUser.username || currentUser;
+                const res = await fetch(`${API_URL}/posts/${post.id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
+                if (res.ok) {
+                  // If parent provided onDelete, call it to update UI
+                  if (typeof onVote === 'function' && typeof window !== 'undefined') {
+                    // as a fallback reload
+                    window.location.reload();
+                  } else {
+                    window.location.reload();
+                  }
+                } else {
+                  const data = await res.json();
+                  alert(data.message || 'Failed to delete post');
+                }
+              } catch (err) { console.error(err); alert('Failed to delete post'); }
+            }}>
+              Delete
+            </button>
+          )}
         </div>
       </div>
     </div>
