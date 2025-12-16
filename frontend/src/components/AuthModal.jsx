@@ -86,7 +86,7 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
         
         <div className="auth-header">
           <img 
-            src="https://www.redditstatic.com/desktop2x/img/favicon/favicon-32x32.png" 
+            src="https://redditinc.com/hs-fs/hubfs/Reddit%20Inc/Content/Brand%20Page/Reddit_Logo.png?width=600&height=600&name=Reddit_Logo.png" 
             alt="Reddit" 
           />
           <h2>{isLogin ? 'Log in' : 'Sign up'}</h2>

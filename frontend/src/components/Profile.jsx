@@ -114,8 +114,8 @@ const Profile = ({ currentUser }) => {
                         <div style={styles.bioEditContainer}>
                             <textarea 
                                 value={bioText} 
-                                onChange={(e) => setBioText(e.target.value)} 
-                                style={styles.textarea}
+                                onChange={(e) => setBioText(e.target.value)}
+                                style={{...styles.textarea, whiteSpace: 'pre-wrap', wordWrap: 'break-word'}}
                             />
                             <div style={styles.buttonGroup}>
                                 <button onClick={handleSaveBio} style={styles.saveBtn}>Save</button>
@@ -124,7 +124,7 @@ const Profile = ({ currentUser }) => {
                         </div>
                     ) : (
                         <div>
-                            <p style={styles.bioText}>{profileData.profile.bio || "No bio yet."}</p>
+                            <p style={{...styles.bioText, whiteSpace: 'pre-wrap', wordWrap: 'break-word'}}>{profileData.profile.bio || "No bio yet."}</p>
                             {isOwner && (
                                 <button onClick={() => setIsEditing(true)} style={styles.editBtn}>
                                     Edit Bio

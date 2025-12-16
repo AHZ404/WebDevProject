@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import Post from './Post';
 import { API_URL } from './config';
 
-const Community = ({ currentUser }) => {
+const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPosts }) => {
   const { communityName } = useParams(); // Grabs "reactjs" from url /r/reactjs
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,13 +69,34 @@ const Community = ({ currentUser }) => {
             <p style={{ color: '#7c7c7c', margin: '4px 0 0 0', fontSize: '14px' }}>r/{communityName}</p>
           </div>
 
-          <button style={{ 
-            marginTop: '24px', marginLeft: '24px', padding: '4px 24px', 
-            borderRadius: '99px', border: '1px solid #0079d3', fontWeight: 'bold',
-            color: 'white', backgroundColor: '#0079d3', cursor: 'pointer'
-          }}>
-            Join
-          </button>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '24px', marginLeft: '24px' }}>
+            <button 
+              onClick={onCreatePostClick}
+              style={{ 
+                padding: '8px 24px', 
+                borderRadius: '99px', 
+                border: 'none', 
+                fontWeight: 'bold',
+                color: 'white', 
+                backgroundColor: '#0079d3', 
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Create Post
+            </button>
+            <button style={{ 
+              padding: '4px 24px', 
+              borderRadius: '99px', 
+              border: '1px solid #0079d3', 
+              fontWeight: 'bold',
+              color: 'white', 
+              backgroundColor: '#0079d3', 
+              cursor: 'pointer'
+            }}>
+              Join
+            </button>
+          </div>
         </div>
       </div>
 

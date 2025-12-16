@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Header.css'; 
 
-const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) => {
+const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick, onCreatePostClick }) => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState({ posts: [], communities: [] });
@@ -72,7 +72,7 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
       <nav className="navbar">
         <Link to="/" className="logo" style={{ textDecoration: 'none' }}>
           <img 
-            src="https://www.redditstatic.com/desktop2x/img/favicon/favicon-32x32.png" 
+            src="https://redditinc.com/hs-fs/hubfs/Reddit%20Inc/Content/Brand%20Page/Reddit_Logo.png?width=600&height=600&name=Reddit_Logo.png" 
             alt="Reddit" 
           />
           <span>reddit</span>
@@ -174,8 +174,11 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
                   className="dropdown-item" 
                   onClick={() => {
                     setIsCreateOpen(false);
-                    const createPostBtn = document.querySelector('.sidebar button');
-                    if (createPostBtn) createPostBtn.click();
+                    if (currentUser) {
+                      onCreatePostClick();
+                    } else {
+                      onAuthClick();
+                    }
                   }}
                 >
                   <span className="item-icon"></span>

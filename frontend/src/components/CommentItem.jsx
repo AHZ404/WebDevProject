@@ -96,7 +96,7 @@ const CommentItem = ({ comment, postId, currentUser }) => {
         <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
       </div>
 
-      <div style={{ fontSize: '14px', marginBottom: '8px', lineHeight: '1.5' }}>
+      <div style={{ fontSize: '14px', marginBottom: '8px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
         {comment.content}
       </div>
 
@@ -109,7 +109,7 @@ const CommentItem = ({ comment, postId, currentUser }) => {
 
       {showReplyForm && (
          <div style={{ marginTop: '10px' }}>
-            <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="What are your thoughts?" style={{ width: '100%', padding: '8px', border: '1px solid #ccc' }} />
+            <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="What are your thoughts?" style={{ width: '100%', padding: '8px', border: '1px solid #ccc', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }} />
             <button onClick={handleReplySubmit} style={{ marginTop: '5px', padding: '4px 12px', background: '#0079d3', color: 'white', border: 'none', borderRadius: '15px', cursor: 'pointer' }}>Reply</button>
          </div>
       )}
