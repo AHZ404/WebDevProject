@@ -59,12 +59,12 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
     }
   };
 
-  const handleSuggestionClick = (e, path) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSearchTerm('');
-    setShowSuggestions(false);
-    navigate(path);
+  // Helper function to clean community name (remove r/ prefix if present)
+  const cleanCommunityName = (communityName) => {
+    if (!communityName) return '';
+    return communityName.startsWith('r/') 
+      ? communityName.substring(2) 
+      : communityName;
   };
 
   return (
@@ -97,18 +97,24 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
               {/* COMMUNITIES SECTION */}
               {suggestions.communities.length > 0 && (
                 <div className="suggestions-section">
-                  <div className="suggestions-section-title">Communities</div>
+                  <div className="suggestions-section-title">COMMUNITIES</div>
                   {suggestions.communities.map(community => (
                     <div
                       key={community._id}
                       className="suggestion-item"
-                      onClick={(e) => handleSuggestionClick(e, `/r/${community.name}`)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const cleanName = cleanCommunityName(community.name);
+                        setSearchTerm('');
+                        setShowSuggestions(false);
+                        navigate(`/r/${cleanName}`);
+                      }}
                     >
                       <div className="community-icon">
                         {community.icon || '📁'}
                       </div>
                       <div className="suggestion-content">
-                        <div className="suggestion-main">r/{community.name}</div>
+                        <div className="suggestion-main">r/{cleanCommunityName(community.name)}</div>
                         <div className="suggestion-sub">
                           {community.members || 0} members
                         </div>
@@ -121,12 +127,19 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
               {/* POSTS SECTION */}
               {suggestions.posts.length > 0 && (
                 <div className="suggestions-section">
-                  <div className="suggestions-section-title">Posts</div>
+                  <div className="suggestions-section-title">POSTS</div>
                   {suggestions.posts.map(post => (
                     <div
                       key={post._id}
                       className="suggestion-item"
-                      onClick={(e) => handleSuggestionClick(e, `/r/${post.community}/comments/${post._id}`)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const cleanName = cleanCommunityName(post.community);
+                        setSearchTerm('');
+                        setShowSuggestions(false);
+                        // Navigate to the post details page
+                        navigate(`/r/${cleanName}/comments/${post._id}`);
+                      }}
                     >
                       <div className="community-icon">
                         📄
@@ -134,7 +147,7 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick }) 
                       <div className="suggestion-content">
                         <div className="suggestion-main">{post.title}</div>
                         <div className="suggestion-sub">
-                          {post.community} • u/{post.username}
+                          r/{cleanCommunityName(post.community)} • u/{post.username}
                         </div>
                       </div>
                     </div>
