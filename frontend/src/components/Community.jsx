@@ -15,6 +15,7 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
   const [showEditModal, setShowEditModal] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
   const [sortBy, setSortBy] = useState('best');
+  const [zoomedImage, setZoomedImage] = useState(null); // For image zoom modal
 
   // Helper function to clean community name (remove r/ if present)
   const cleanCommunityName = (name) => {
@@ -53,6 +54,16 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
     setIsJoined(!isJoined);
   };
 
+  const cleanName = cleanCommunityName(communityName);
+  
+  const getMediaUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    const baseUrl = API_URL.replace('/api', '');
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${baseUrl}${normalizedPath}`;
+  };
+
   // Fetch posts specifically for this community
   useEffect(() => {
     const fetchCommunityPosts = async () => {
@@ -60,14 +71,8 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
       try {
         const cleanName = cleanCommunityName(communityName);
         const url = `${API_URL}/posts?community=${encodeURIComponent(cleanName)}&sortBy=${sortBy}`;
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/eb9f592d-6c6e-42f5-ac3f-390714336380',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Community.jsx:61',message:'Fetching community posts - request params',data:{communityName,cleanName,sortBy,url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
         const response = await fetch(url);
         const data = await response.json();
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/eb9f592d-6c6e-42f5-ac3f-390714336380',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Community.jsx:65',message:'Received posts response',data:{responseOk:response.ok,dataIsArray:Array.isArray(data),postCount:Array.isArray(data)?data.length:0,firstPostCommunity:Array.isArray(data)&&data[0]?data[0].community:null,firstPostDate:Array.isArray(data)&&data[0]?data[0].createdAt:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         
         if (response.ok && Array.isArray(data)) {
           const savedUserStr = localStorage.getItem("user");
@@ -119,7 +124,6 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
 
     fetchCommunityPosts();
 
-    // Fetch subreddit metadata
     const fetchSubreddit = async () => {
       try {
         const cleanName = cleanCommunityName(communityName);
@@ -173,23 +177,35 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
     } catch (error) { console.error("Vote error:", error); }
   };
 
-  const cleanName = cleanCommunityName(communityName);
-  const getMediaUrl = (path) => {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    const baseUrl = API_URL.replace('/api', '');
-    return `${baseUrl}${path}`;
+  // Get banner style - improved logic
+  const getBannerStyle = () => {
+    if (subreddit?.banner) {
+      const bannerUrl = getMediaUrl(subreddit.banner);
+      console.log('🎨 Banner URL being used:', bannerUrl);
+     return { height: '200px', backgroundImage: `url("${bannerUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', position: 'relative', marginBottom: '0', cursor: 'pointer' };
+
+    }
+    return {
+      height: '200px',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 50%, #f5576c 100%)',
+      position: 'relative',
+      marginBottom: '0'
+    };
   };
 
   return (
     <div className="community-page" style={{ background: '#030303', minHeight: '100vh' }}>
-      {/* BANNER SECTION */}
-      <div className="community-banner" style={{
-        height: '200px',
-        background: subreddit && subreddit.banner ? `url(${getMediaUrl(subreddit.banner)}) center/cover no-repeat` : 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 50%, #f5576c 100%)',
-        position: 'relative',
-        marginBottom: '0'
-      }}>
+      {/* ✅ BANNER SECTION - Click to zoom */}
+      <div 
+        className="community-banner" 
+        style={getBannerStyle()}
+        onClick={() => {
+          if (subreddit?.banner) {
+            setZoomedImage({ url: getMediaUrl(subreddit.banner), type: 'banner' });
+          }
+        }}
+        title={subreddit?.banner ? "Click to view full size" : ""}
+      >
         <div style={{
           position: 'absolute',
           bottom: '20px',
@@ -203,17 +219,20 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
             margin: '0 0 8px 0',
             textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
           }}>
-            {subreddit && subreddit.title ? subreddit.title.toUpperCase() : cleanName.toUpperCase()}
+            {subreddit?.title ? subreddit.title.toUpperCase() : cleanName.toUpperCase()}
           </h2>
           <p style={{ 
             fontSize: '16px', 
             margin: '0 0 16px 0',
             textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
           }}>
-            {subreddit && subreddit.tagline ? subreddit.tagline : 'Where History and Culture Meet'}
+            {subreddit?.tagline || 'Where History and Culture Meet'}
           </p>
           <button 
-            onClick={handleJoin}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleJoin();
+            }}
             style={{
               padding: '10px 24px',
               borderRadius: '20px',
@@ -245,20 +264,17 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
           justifyContent: 'space-between'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {/* Circular Logo */}
-            <div style={{ 
-              width: '64px', 
-              height: '64px', 
-              borderRadius: '50%', 
-              border: '3px solid #ffffff', 
-              backgroundColor: '#0079d3', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              overflow: 'hidden',
-              flexShrink: 0
-            }}>
-              {subreddit && subreddit.logo ? (
+            {/* ✅ Circular Logo - Click to zoom */}
+            <div 
+              style={{ width: '64px', height: '64px', borderRadius: '50%', border: '3px solid #ffffff', backgroundColor: subreddit?.logo ? 'transparent' : '#0079d3', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, cursor: subreddit?.logo ? 'pointer' : 'default' }}
+              onClick={() => {
+                if (subreddit?.logo) {
+                  setZoomedImage({ url: getMediaUrl(subreddit.logo), type: 'logo' });
+                }
+              }}
+              title={subreddit?.logo ? "Click to view full size" : ""}
+            >
+              {subreddit?.logo ? (
                 <img 
                   src={getMediaUrl(subreddit.logo)} 
                   alt={cleanName} 
@@ -432,9 +448,7 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
                 color: '#d7dadc',
                 margin: '0 0 16px 0'
               }}>
-                {subreddit && subreddit.description 
-                  ? subreddit.description 
-                  : `Welcome to ${displayCommunityName(communityName)}!`}
+                {subreddit?.description || `Welcome to ${displayCommunityName(communityName)}!`}
               </p>
               
               <div style={{ 
@@ -446,7 +460,7 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
                 color: '#818384'
               }}>
                 <span>📅</span>
-                <span>Created {subreddit && subreddit.createdAt 
+                <span>Created {subreddit?.createdAt 
                   ? new Date(subreddit.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                   : 'Recently'}</span>
               </div>
@@ -489,6 +503,33 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
           </div>
         </div>
       </div>
+
+      {/* ✅ IMAGE ZOOM MODAL */}
+      {zoomedImage && (
+        <div 
+         style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, cursor: 'zoom-out' }}
+          onClick={() => setZoomedImage(null)}
+        >
+          <button
+            onClick={() => setZoomedImage(null)}
+            style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255, 255, 255, 0.1)', border: 'none', color: 'white', fontSize: '32px', width: '50px', height: '50px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+          >
+            ×
+          </button>
+          <img 
+            src={zoomedImage.url} 
+            alt={zoomedImage.type === 'logo' ? 'Community Logo' : 'Community Banner'}
+            style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: zoomedImage.type === 'logo' ? '50%' : '8px', boxShadow: '0 0 50px rgba(0, 0, 0, 0.5)' }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div style={{ position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', color: 'white', fontSize: '14px', backgroundColor: 'rgba(0, 0, 0, 0.7)', padding: '8px 16px', borderRadius: '20px' }}>
+            {zoomedImage.type === 'logo' ? 'Community Logo' : 'Community Banner'}
+          </div>
+        </div>
+      )}
 
       {/* Edit Community Modal */}
       <EditCommunityModal
