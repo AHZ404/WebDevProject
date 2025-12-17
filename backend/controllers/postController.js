@@ -492,4 +492,55 @@ const searchPosts = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-module.exports = { getAllPosts, createPost, getPostsByUser, votePost, getPostById , searchPosts, deletePost };
+
+
+
+const summarizePost = async (req, res) => {
+  try {
+    const { content } = req.body;
+
+    if (!content) {
+      return res.status(400).json({ message: "No content to summarize" });
+    }
+
+    console.log("1. AI Request Started...");
+
+    const MODEL_URL = "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn";
+
+    const response = await fetch(MODEL_URL, {
+        headers: {
+          Authorization: `Bearer ${process.env.HUGGING_FACE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        body: JSON.stringify({ inputs: content }),
+    });
+
+    const result = await response.json();
+    console.log("2. AI Status:", response.status);
+
+    if (result.error && result.error.includes("loading")) {
+        // Return 503 so the frontend knows to try again
+        return res.status(503).json({ message: "AI is warming up... please click Summarize again in 20 seconds!" });
+    }
+
+    if (response.status !== 200) {
+        console.error("AI Error:", result);
+        return res.status(response.status).json({ message: "AI Error: " + (result.error || "Unknown error") });
+    }
+
+    const summary = Array.isArray(result) ? result[0]?.summary_text : result?.summary_text;
+    
+    if (!summary) throw new Error("No summary returned");
+
+    res.status(200).json({ summary });
+
+  } catch (error) {
+    console.error("AI Controller Error:", error.message);
+    res.status(500).json({ message: "Failed to generate summary" });
+  }
+};
+
+
+
+module.exports = { getAllPosts, createPost, getPostsByUser, votePost, getPostById , searchPosts, deletePost, summarizePost };
