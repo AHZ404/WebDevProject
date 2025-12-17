@@ -15,7 +15,8 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
   const [showEditModal, setShowEditModal] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
   const [sortBy, setSortBy] = useState('best');
-  const [zoomedImage, setZoomedImage] = useState(null); // For image zoom modal
+  const [zoomedImage, setZoomedImage] = useState(null);
+  const [bannerLoaded, setBannerLoaded] = useState(false);
 
   // Helper function to clean community name (remove r/ if present)
   const cleanCommunityName = (name) => {
@@ -42,6 +43,7 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
   const handleCommunityUpdate = (updatedSubreddit) => {
     setSubreddit(updatedSubreddit);
     setShowEditModal(false);
+    setBannerLoaded(false); // Force banner reload
   };
 
   // Handle join/leave community
@@ -63,6 +65,27 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     return `${baseUrl}${normalizedPath}`;
   };
+
+  // Preload banner image when subreddit data changes
+  useEffect(() => {
+    if (subreddit?.banner) {
+      const bannerUrl = getMediaUrl(subreddit.banner);
+      console.log('🎨 Preloading banner:', bannerUrl);
+      
+      const img = new Image();
+      img.onload = () => {
+        console.log('✅ Banner loaded successfully');
+        setBannerLoaded(true);
+      };
+      img.onerror = () => {
+        console.error('❌ Failed to load banner');
+        setBannerLoaded(false);
+      };
+      img.src = bannerUrl;
+    } else {
+      setBannerLoaded(true);
+    }
+  }, [subreddit?.banner]);
 
   // Fetch posts specifically for this community
   useEffect(() => {
@@ -130,7 +153,9 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
         const res = await fetch(`${API_URL}/subreddits/${encodeURIComponent(cleanName)}`);
         if (res.ok) {
           const data = await res.json();
+          console.log('📊 Subreddit data loaded:', data);
           setSubreddit(data);
+          setBannerLoaded(false); // Reset banner loaded state
         } else {
           setSubreddit(null);
         }
@@ -177,13 +202,24 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
     } catch (error) { console.error("Vote error:", error); }
   };
 
-  // Get banner style - improved logic
+  // Get banner style - improved with forced visibility
   const getBannerStyle = () => {
     if (subreddit?.banner) {
       const bannerUrl = getMediaUrl(subreddit.banner);
       console.log('🎨 Banner URL being used:', bannerUrl);
-     return { height: '200px', backgroundImage: `url("${bannerUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', position: 'relative', marginBottom: '0', cursor: 'pointer' };
-
+      
+      return {
+        height: '200px',
+        backgroundImage: `url("${bannerUrl}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        position: 'relative',
+        marginBottom: '0',
+        cursor: 'pointer',
+        opacity: bannerLoaded ? 1 : 0.8,
+        transition: 'opacity 0.3s ease-in-out'
+      };
     }
     return {
       height: '200px',
@@ -195,7 +231,7 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
 
   return (
     <div className="community-page" style={{ background: '#030303', minHeight: '100vh' }}>
-      {/* ✅ BANNER SECTION - Click to zoom */}
+      {/* BANNER SECTION - Click to zoom */}
       <div 
         className="community-banner" 
         style={getBannerStyle()}
@@ -206,6 +242,17 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
         }}
         title={subreddit?.banner ? "Click to view full size" : ""}
       >
+        {/* Hidden img tag to force browser to load the image */}
+        {subreddit?.banner && (
+          <img 
+            src={getMediaUrl(subreddit.banner)} 
+            alt="Banner preload" 
+            style={{ display: 'none' }}
+            onLoad={() => setBannerLoaded(true)}
+            onError={() => console.error('Banner load error')}
+          />
+        )}
+        
         <div style={{
           position: 'absolute',
           bottom: '20px',
@@ -214,114 +261,156 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
           zIndex: 2
         }}>
           <h2 style={{ 
-            fontSize: '32px', 
-            fontWeight: 700, 
-            margin: '0 0 8px 0',
+            margin: '0 0 8px 0', 
+            fontSize: '32px',
+            fontWeight: 800,
             textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
           }}>
-            {subreddit?.title ? subreddit.title.toUpperCase() : cleanName.toUpperCase()}
+            {subreddit ? subreddit.name.toUpperCase() : cleanName.toUpperCase()}
           </h2>
           <p style={{ 
-            fontSize: '16px', 
-            margin: '0 0 16px 0',
+            margin: 0, 
+            fontSize: '16px',
             textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
           }}>
-            {subreddit?.tagline || 'Where History and Culture Meet'}
+            {subreddit?.description || `Where History and Culture Meet`}
           </p>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              handleJoin();
-            }}
-            style={{
-              padding: '10px 24px',
-              borderRadius: '20px',
-              border: 'none',
-              fontWeight: 700,
-              color: '#ffffff',
-              backgroundColor: '#0079d3',
-              cursor: 'pointer',
-              fontSize: '14px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-            }}
-          >
-            JOIN US NOW!
-          </button>
         </div>
+
+        {subreddit?.banner && (
+          <div style={{
+            position: 'absolute',
+            bottom: '12px',
+            right: '12px',
+            background: 'rgba(0, 0, 0, 0.5)',
+            padding: '6px 12px',
+            borderRadius: '12px',
+            fontSize: '12px',
+            color: 'white',
+            zIndex: 2
+          }}>
+            Click to view full size 🔍
+          </div>
+        )}
       </div>
 
-      {/* COMMUNITY HEADER BAR */}
-      <div className="community-header-bar" style={{ 
-        background: '#1a1a1b', 
+      {/* COMMUNITY INFO BAR */}
+      <div style={{
+        background: '#1a1a1b',
         borderBottom: '1px solid #343536',
         padding: '16px 24px'
       }}>
-        <div style={{ 
-          maxWidth: '1400px', 
-          margin: '0 auto', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between'
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          maxWidth: '1400px',
+          margin: '0 auto'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {/* ✅ Circular Logo - Click to zoom */}
-            <div 
-              style={{ width: '64px', height: '64px', borderRadius: '50%', border: '3px solid #ffffff', backgroundColor: subreddit?.logo ? 'transparent' : '#0079d3', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, cursor: subreddit?.logo ? 'pointer' : 'default' }}
-              onClick={() => {
-                if (subreddit?.logo) {
-                  setZoomedImage({ url: getMediaUrl(subreddit.logo), type: 'logo' });
-                }
-              }}
-              title={subreddit?.logo ? "Click to view full size" : ""}
-            >
-              {subreddit?.logo ? (
-                <img 
-                  src={getMediaUrl(subreddit.logo)} 
-                  alt={cleanName} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                />
-              ) : (
-                <div style={{ fontSize: '32px', color: 'white', fontWeight: 'bold' }}>r/</div>
+          {/* Community Logo */}
+          <div 
+            style={{
+              width: '72px',
+              height: '72px',
+              borderRadius: '50%',
+              backgroundColor: '#0079d3',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              border: '4px solid #1a1a1b',
+              marginTop: '-36px',
+              flexShrink: 0,
+              cursor: subreddit?.logo ? 'pointer' : 'default',
+              transition: 'transform 0.2s'
+            }}
+            onClick={() => {
+              if (subreddit?.logo) {
+                setZoomedImage({ url: getMediaUrl(subreddit.logo), type: 'logo' });
+              }
+            }}
+            onMouseEnter={(e) => {
+              if (subreddit?.logo) e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              if (subreddit?.logo) e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            {subreddit?.logo ? (
+              <img 
+                src={getMediaUrl(subreddit.logo)} 
+                alt="Community logo" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
+            ) : (
+              <span style={{ fontSize: '24px', color: 'white', fontWeight: 'bold' }}>r/</span>
+            )}
+          </div>
+
+          {/* Community Info */}
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <h1 style={{ 
+                margin: 0, 
+                fontSize: '28px', 
+                fontWeight: 700, 
+                color: '#d7dadc' 
+              }}>
+                {displayCommunityName(subreddit ? subreddit.name : cleanName)}
+              </h1>
+              {subreddit?.isOver18 && (
+                <span style={{
+                  background: '#ea0027',
+                  color: 'white',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: 700
+                }}>
+                  18+
+                </span>
               )}
             </div>
-
-            {/* Community Name */}
-            <div>
-              <h1 style={{ 
-                fontSize: '24px', 
-                fontWeight: 700, 
-                margin: 0,
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                {displayCommunityName(subreddit ? subreddit.name : communityName)}
-                <span style={{ fontSize: '16px', color: '#818384' }}>⭐</span>
-              </h1>
+            <div style={{ display: 'flex', gap: '16px', fontSize: '14px', color: '#818384' }}>
+              <span>{subreddit?.members || 0} members</span>
+              <span>•</span>
+              <span>Online now</span>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {isCreator() && (
+              <button 
+                onClick={() => setShowEditModal(true)}
+                style={{ 
+                  padding: '8px 20px', 
+                  borderRadius: '20px', 
+                  border: '1px solid #343536', 
+                  background: '#272729',
+                  color: '#d7dadc',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Edit Community
+              </button>
+            )}
             <button 
-              onClick={onCreatePostClick}
+              onClick={() => onCreatePostClick()}
               style={{ 
                 padding: '8px 20px', 
                 borderRadius: '20px', 
-                border: 'none', 
+                border: '1px solid #ff4500', 
+                background: '#ff4500',
+                color: '#ffffff',
                 fontWeight: 700,
-                color: '#ffffff', 
-                backgroundColor: '#ff4500', 
                 cursor: 'pointer',
-                fontSize: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
+                fontSize: '14px'
               }}
             >
-              <span>+</span>
-              <span>Create Post</span>
+              + Create Post
             </button>
             <button 
               style={{ 
@@ -504,7 +593,7 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
         </div>
       </div>
 
-      {/* ✅ IMAGE ZOOM MODAL */}
+      {/* IMAGE ZOOM MODAL */}
       {zoomedImage && (
         <div 
          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, cursor: 'zoom-out' }}
