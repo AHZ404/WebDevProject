@@ -21,6 +21,14 @@ const subredditSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  logo: {
+    type: String,
+    default: null
+  },
+  banner: {
+    type: String,
+    default: null
+  },
   members: {
     type: Number,
     default: 1

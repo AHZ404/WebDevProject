@@ -15,19 +15,27 @@ const getSubreddits = async (req, res) => {
 const createSubreddit = async (req, res) => {
   try {
     // DEBUG 1: Check what the frontend sent us
-    console.log("------------------------------------------------");
-    console.log("1. Incoming Data:", req.body);
+    console.log("=".repeat(50));
+    console.log("COMMUNITY CREATION REQUEST");
+    console.log("=".repeat(50));
+    console.log("1. Incoming req.body:", req.body);
+    console.log("1. Incoming req.files:", req.files);
 
-    const { name, description, privacyMode, isOver18, username } = req.body;
+    let { name, description, privacyMode, isOver18, username } = req.body;
 
+    // Normalize name to remove r/ if user accidentally provided it and trim/standardize
     if (!name) {
-        console.log("Error: Name missing");
+        console.log("❌ Error: Name missing");
         return res.status(400).json({ message: "Name is required" });
     }
+    name = name.toString().trim();
+    if (name.startsWith('r/')) name = name.substring(2);
+    // Also lowercase names to enforce uniqueness consistently
+    name = name.toLowerCase();
 
     // DEBUG 2: Check if we have a username to look for
     if (!username) {
-        console.log("Error: Username missing from request body");
+        console.log("❌ Error: Username missing from request body");
         return res.status(400).json({ message: "Username is required" });
     }
 
@@ -37,35 +45,133 @@ const createSubreddit = async (req, res) => {
     const user = await User.findOne({ username: username });
     
     if (!user) {
-        console.log("3. User NOT found in Database!");
+        console.log("❌ Error: User NOT found in Database!");
         return res.status(404).json({ message: "User not found. Please log in again." });
     }
 
-    console.log(`3. User Found! ID is: ${user._id}`);
+    console.log(`✅ User Found! ID is: ${user._id}`);
 
     const existing = await Subreddit.findOne({ name });
     if (existing) {
+      console.log("❌ Error: Subreddit already exists");
       return res.status(400).json({ message: "Subreddit already exists" });
     }
+
+    // Get file paths if uploaded
+    const logoPath = req.files && req.files.logo ? req.files.logo[0].path : null;
+    const bannerPath = req.files && req.files.banner ? req.files.banner[0].path : null;
+    
+    console.log(`3. Logo path: ${logoPath}`);
+    console.log(`3. Banner path: ${bannerPath}`);
 
     // Create the Subreddit using the ID we found
     const newSubreddit = await Subreddit.create({
       name,
       description,
-      privacyMode, 
-      isOver18,    
-      creator: user._id, // <--- THIS MUST BE A VALID ID
+      privacyMode: privacyMode || 'public', 
+      isOver18: isOver18 === 'true' || isOver18 === true,    
+      creator: user._id,
+      logo: logoPath,
+      banner: bannerPath,
       members: 1
     });
 
-    console.log("4. SUCCESS! Subreddit created.");
-    console.log("------------------------------------------------");
+    console.log("✅ SUCCESS! Subreddit created.");
+    console.log("=".repeat(50));
 
     res.status(201).json(newSubreddit);
   } catch (error) {
-    console.error("CRASH ERROR:", error); 
+    console.error("❌ CRASH ERROR:", error); 
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { getSubreddits, createSubreddit };
+// Get single subreddit by name
+const getSubredditByName = async (req, res) => {
+  try {
+    let name = req.params.name;
+    if (name && name.startsWith('r/')) name = name.substring(2);
+    console.log(`Fetching subreddit: ${name}`);
+    const subreddit = await Subreddit.findOne({ name }).populate('creator', 'username _id');
+    if (!subreddit) {
+      return res.status(404).json({ message: 'Subreddit not found' });
+    }
+    res.status(200).json(subreddit);
+  } catch (error) {
+    console.error("Error fetching subreddit by name:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update subreddit (only by creator)
+const updateSubreddit = async (req, res) => {
+  try {
+    console.log("=".repeat(50));
+    console.log("COMMUNITY UPDATE REQUEST");
+    console.log("=".repeat(50));
+    console.log("1. Incoming req.body:", req.body);
+    console.log("1. Incoming req.files:", req.files);
+
+    let { name, description, username } = req.body;
+
+    // Normalize name
+    if (!name) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+    name = name.toString().trim();
+    if (name.startsWith('r/')) name = name.substring(2);
+    name = name.toLowerCase();
+
+    if (!username) {
+      return res.status(400).json({ message: "Username is required" });
+    }
+
+    // Find the subreddit
+    const subreddit = await Subreddit.findOne({ name }).populate('creator', 'username _id');
+    if (!subreddit) {
+      return res.status(404).json({ message: 'Subreddit not found' });
+    }
+
+    // Find the user
+    const user = await User.findOne({ username: username });
+    if (!user) {
+      return res.status(404).json({ message: "User not found. Please log in again." });
+    }
+
+    // Check if user is the creator
+    if (subreddit.creator._id.toString() !== user._id.toString()) {
+      return res.status(403).json({ message: "Only the community creator can edit this community" });
+    }
+
+    // Prepare update object
+    const updateData = {};
+    if (description !== undefined) {
+      updateData.description = description;
+    }
+
+    // Handle file uploads
+    if (req.files && req.files.logo) {
+      updateData.logo = req.files.logo[0].path;
+    }
+    if (req.files && req.files.banner) {
+      updateData.banner = req.files.banner[0].path;
+    }
+
+    // Update the subreddit
+    const updatedSubreddit = await Subreddit.findOneAndUpdate(
+      { name },
+      updateData,
+      { new: true }
+    ).populate('creator', 'username _id');
+
+    console.log("✅ SUCCESS! Subreddit updated.");
+    console.log("=".repeat(50));
+
+    res.status(200).json(updatedSubreddit);
+  } catch (error) {
+    console.error("❌ CRASH ERROR:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { getSubreddits, createSubreddit, getSubredditByName, updateSubreddit };

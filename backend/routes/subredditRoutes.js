@@ -1,8 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const { getSubreddits, createSubreddit } = require('../controllers/subredditController');
+const upload = require('../middleware/upload');
+const { getSubreddits, createSubreddit, getSubredditByName, updateSubreddit } = require('../controllers/subredditController');
+
+console.log('Subreddit routes loaded');
 
 router.get('/', getSubreddits);
-router.post('/', createSubreddit);
+router.get('/:name', getSubredditByName);
+
+// POST route with multer middleware for file uploads
+router.post('/', (req, res, next) => {
+  console.log('POST /subreddits - Starting upload processing');
+  upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'banner', maxCount: 1 }])(req, res, next);
+}, createSubreddit);
+
+// PUT route for updating subreddit (with multer middleware for file uploads)
+router.put('/:name', (req, res, next) => {
+  console.log('PUT /subreddits/:name - Starting upload processing');
+  upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'banner', maxCount: 1 }])(req, res, next);
+}, updateSubreddit);
 
 module.exports = router;
