@@ -11,6 +11,9 @@ const PostDetails = ({ currentUser }) => {
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
 
+  const [summary, setSummary] = useState(null);
+  const [summarizing, setSummarizing] = useState(false);
+
   // Helper: Build Tree from Flat List
   const buildCommentTree = (flatComments) => {
     const commentMap = {};
@@ -56,6 +59,38 @@ const PostDetails = ({ currentUser }) => {
     fetchData();
   }, [postId]);
 
+
+const handleSummarize = async () => {
+    if (!post?.content) return alert("This post has no text content to summarize.");
+    
+    setSummarizing(true);
+    try {
+      const res = await fetch(`${API_URL}/posts/summarize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: post.content }),
+      });
+  
+      const data = await res.json();
+      
+      if (res.ok) {
+        setSummary(data.summary);
+      } else {
+        alert(data.message || "Error summarizing. The AI might be warming up, try again in 30s.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Failed to connect to AI service");
+    } finally {
+      setSummarizing(false);
+    }
+  };
+
+
+
+
   const handleCommentSubmit = async () => {
     if (!currentUser) return alert("Log in to comment");
     if (!newComment.trim()) return;
@@ -95,6 +130,44 @@ const PostDetails = ({ currentUser }) => {
               mediaUrl: post.mediaUrl
           }} onVote={() => {}} currentUser={currentUser} />
 
+          {/* --- 3. INSERT AI SUMMARIZER UI HERE (Between Post and Comments) --- */}
+          <div style={{ marginTop: '10px', marginBottom: '10px', padding: '15px', background: 'white', borderRadius: '4px', border: '1px solid #ccc' }}>
+            {!summary ? (
+              <button 
+                onClick={handleSummarize} 
+                disabled={summarizing}
+                style={{
+                  background: 'linear-gradient(45deg, #FF4500, #FF8755)', 
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 20px',
+                  borderRadius: '20px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: 'fit-content'
+                }}
+              >
+                {summarizing ? '✨ Summarizing...' : '✨ Summarize this post with AI'}
+              </button>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                   <h4 style={{ margin: 0, color: '#FF4500', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                     ✨ AI Summary
+                   </h4>
+                   <button onClick={() => setSummary(null)} style={{ background: 'none', border: 'none', color: '#878a8c', cursor: 'pointer', fontSize: '12px' }}>Close</button>
+                </div>
+                <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#1c1c1c', background: '#f6f7f8', padding: '10px', borderRadius: '4px' }}>
+                  {summary}
+                </p>
+              </div>
+            )}
+          </div>
+          {/* ----------------------------------------------------------------- */}
+
           {/* Comment Section */}
           <div style={{ background: 'white', marginTop: '10px', padding: '20px', borderRadius: '4px' }}>
               
@@ -125,7 +198,6 @@ const PostDetails = ({ currentUser }) => {
                     <CommentItem 
                         key={c._id} 
                         comment={c} 
-                        // <--- IMPORTANT: Passing these props down is what fixes your reply button!
                         postId={post._id}           
                         currentUser={currentUser}   
                     />
