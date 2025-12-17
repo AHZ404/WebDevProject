@@ -5,6 +5,7 @@ import { API_URL } from './config';
 const Sidebar = ({ onCreatePost, currentUser, communities = [], onCreatePostClick, currentCommunity }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isOpen, setIsOpen] = useState(true);
 
   const cleanCommunityName = (name) => {
     if (!name) return '';
@@ -14,8 +15,45 @@ const Sidebar = ({ onCreatePost, currentUser, communities = [], onCreatePostClic
   // Get recent communities (last 5 visited or all if less than 5)
   const recentCommunities = communities.slice(0, 5);
 
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+  };
+
+  if (!isOpen) {
+    return (
+      <aside className="sidebar" style={{
+        width: '56px',
+        minWidth: '56px',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        padding: 0
+      }}>
+        <div style={{ padding: '8px', marginBottom: '4px' }}>
+          <button 
+            className="nav-item" 
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center',
+              margin: 0,
+              padding: '10px 16px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+            onClick={toggleSidebar}
+          >
+            <span className="nav-item-icon" style={{ fontSize: '20px' }}>☰</span>
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" style={{
+      borderRadius: '12px',
+      overflow: 'hidden'
+    }}>
       <div style={{ padding: '8px', marginBottom: '4px' }}>
         <button 
           className="nav-item" 
@@ -28,7 +66,7 @@ const Sidebar = ({ onCreatePost, currentUser, communities = [], onCreatePostClic
             border: 'none',
             cursor: 'pointer'
           }}
-          onClick={() => {}}
+          onClick={toggleSidebar}
         >
           <span className="nav-item-icon" style={{ fontSize: '20px' }}>☰</span>
         </button>
@@ -43,7 +81,7 @@ const Sidebar = ({ onCreatePost, currentUser, communities = [], onCreatePostClic
           <span>Popular</span>
         </li>
         <li className="nav-item">
-          <span className="nav-item-icon">🌐</span>
+          <span className="nav-item-icon">🌍</span>
           <span>Explore</span>
         </li>
         <li className="nav-item">
