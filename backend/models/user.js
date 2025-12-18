@@ -28,7 +28,7 @@ const userSchema = mongoose.Schema({
     bio: String,
     avatar: String,
     banner: String,
-    cakeDay: { 
+    cakeDay: {
       type: Date,
       default: Date.now
     }
@@ -47,7 +47,7 @@ const userSchema = mongoose.Schema({
     following: [{ type: ObjectId, ref: 'User' }],
     blockedUsers: [{ type: ObjectId, ref: 'User' }]
   },
-  moderating: [{ type: ObjectId, ref: 'Subreddit' }], 
+  moderating: [{ type: ObjectId, ref: 'Subreddit' }],
   joinedSubreddits: [{ type: ObjectId, ref: 'Subreddit' }],
   isVerified: { type: Boolean, default: false },
   isBanned: { type: Boolean, default: false },
