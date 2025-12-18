@@ -13,7 +13,11 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
   const [loading, setLoading] = useState(true);
   const [subreddit, setSubreddit] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  
+  // NEW STATE: JOIN LOGIC
   const [isJoined, setIsJoined] = useState(false);
+  const [isJoining, setIsJoining] = useState(false); // Prevents spam clicking
+
   const [sortBy, setSortBy] = useState('best');
   const [zoomedImage, setZoomedImage] = useState(null);
   const [bannerLoaded, setBannerLoaded] = useState(false);
@@ -46,18 +50,60 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
     setBannerLoaded(false); // Force banner reload
   };
 
-  // Handle join/leave community
+  const cleanName = cleanCommunityName(communityName);
+  
+  // --- NEW: FIXED JOIN HANDLER ---
   const handleJoin = async () => {
     if (!currentUser) {
       alert('Please log in to join communities');
       return;
     }
-    // TODO: Implement join/leave API call
+    
+    // Prevent double clicking while request is processing
+    if (isJoining) return;
+    setIsJoining(true);
+
+    // Optimistic Update: Update UI immediately for speed
+    const previousState = isJoined;
+    const previousMembers = subreddit?.members;
+
     setIsJoined(!isJoined);
+    setSubreddit(prev => ({
+        ...prev,
+        members: !isJoined ? (prev.members + 1) : (prev.members - 1)
+    }));
+
+    try {
+        const action = !isJoined ? 'join' : 'leave';
+        const response = await fetch(`${API_URL}/subreddits/${cleanName}/${action}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                username: currentUser.username || currentUser 
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error("Action failed");
+        }
+        
+        // Sync with server source of truth to be safe
+        const data = await response.json();
+        setSubreddit(prev => ({
+            ...prev,
+            members: data.members
+        }));
+
+    } catch (error) {
+        console.error("Join/Leave error:", error);
+        // Revert UI if API fails
+        setIsJoined(previousState);
+        setSubreddit(prev => ({ ...prev, members: previousMembers }));
+    } finally {
+        setIsJoining(false);
+    }
   };
 
-  const cleanName = cleanCommunityName(communityName);
-  
   const getMediaUrl = (path) => {
     if (!path) return null;
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
@@ -155,7 +201,35 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
           const data = await res.json();
           console.log('📊 Subreddit data loaded:', data);
           setSubreddit(data);
-          setBannerLoaded(false); // Reset banner loaded state
+          setBannerLoaded(false); 
+
+          // --- FIXED: Robust Join Check ---
+          if (currentUser && data.membersList && Array.isArray(data.membersList)) {
+            // Determine user identifiers safely
+            const currentUserId = currentUser._id || currentUser.id;
+            const currentUsername = currentUser.username || (typeof currentUser === 'string' ? currentUser : null);
+
+            // Check if user is in the list (handling both Objects, ID strings, and Usernames)
+            const isMember = data.membersList.some(member => {
+                // If member is a string (could be ID or Username)
+                if (typeof member === 'string') {
+                    return (currentUserId && member === currentUserId.toString()) || 
+                           (currentUsername && member === currentUsername);
+                }
+                // If member is an object
+                if (typeof member === 'object' && member !== null) {
+                    const memberId = member._id || member.id;
+                    return (currentUserId && memberId && memberId.toString() === currentUserId.toString()) ||
+                           (currentUsername && member.username === currentUsername);
+                }
+                return false;
+            });
+
+            setIsJoined(isMember);
+          } else {
+             setIsJoined(false);
+          }
+
         } else {
           setSubreddit(null);
         }
@@ -166,7 +240,7 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
     };
 
     fetchSubreddit();
-  }, [communityName, sortBy]);
+  }, [communityName, sortBy, currentUser]); // Added currentUser dependency
 
   const handleVote = async (postId, direction) => {
     if (!currentUser) return alert("You must be logged in to vote!");
@@ -430,8 +504,11 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
             >
               🔔
             </button>
+            
+            {/* JOIN BUTTON (FIXED) */}
             <button 
               onClick={handleJoin}
+              disabled={isJoining} // Disable if loading
               style={{ 
                 padding: '8px 20px', 
                 borderRadius: '20px', 
@@ -439,12 +516,15 @@ const Community = ({ currentUser, onCreatePostClick, communities = [], refreshPo
                 fontWeight: 700,
                 color: isJoined ? '#d7dadc' : '#ffffff', 
                 backgroundColor: isJoined ? 'transparent' : '#0079d3', 
-                cursor: 'pointer',
-                fontSize: '14px'
+                cursor: isJoining ? 'wait' : 'pointer',
+                opacity: isJoining ? 0.7 : 1,
+                fontSize: '14px',
+                minWidth: '100px'
               }}
             >
-              {isJoined ? 'Joined' : 'Join'}
+              {isJoining ? '...' : (isJoined ? 'Joined' : 'Join')}
             </button>
+            
             <button 
               style={{ 
                 padding: '8px', 

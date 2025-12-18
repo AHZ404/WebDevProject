@@ -1,7 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middleware/upload');
-const { getSubreddits, createSubreddit, getSubredditByName, updateSubreddit } = require('../controllers/subredditController');
+const { 
+    getSubreddits, 
+    createSubreddit, 
+    getSubredditByName, 
+    updateSubreddit,
+    joinSubreddit,
+    leaveSubreddit
+} = require('../controllers/subredditController');
 
 console.log('Subreddit routes loaded');
 
@@ -19,5 +26,9 @@ router.put('/:name', (req, res, next) => {
   console.log('PUT /subreddits/:name - Starting upload processing');
   upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'banner', maxCount: 1 }])(req, res, next);
 }, updateSubreddit);
+
+// NEW: Join/Leave Routes
+router.put('/:name/join', joinSubreddit);
+router.put('/:name/leave', leaveSubreddit);
 
 module.exports = router;
