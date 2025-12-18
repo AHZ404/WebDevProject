@@ -12,6 +12,7 @@ import Community from "./components/Community";
 import { API_URL } from "./components/config.jsx";
 import PostDetails from "./components/PostDetails";
 import SearchResults from "./components/SearchResults";
+import Chat from "./components/Chat";
 
 const App = () => {
   const [posts, setPosts] = useState([]);
@@ -320,6 +321,11 @@ const App = () => {
           <Route
             path="/u/:username"
             element={<Profile currentUser={currentUser} />}
+          />
+          <Route path="/chats" element={<Chat currentUser={currentUser} />} />
+          <Route
+            path="/chats/:chatId"
+            element={<Chat currentUser={currentUser} />}
           />
           <Route
             path="/r/:communityName/comments/:postId"
