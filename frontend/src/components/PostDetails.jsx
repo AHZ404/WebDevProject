@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import Post from './Post'; 
 import CommentItem from './CommentItem';
 import { API_URL } from './config';
+import './PostDetails.css'; // Import the new CSS
 
 const PostDetails = ({ currentUser }) => {
   const { postId } = useParams(); 
@@ -14,18 +15,15 @@ const PostDetails = ({ currentUser }) => {
   const [summary, setSummary] = useState(null);
   const [summarizing, setSummarizing] = useState(false);
 
-  // Helper: Build Tree from Flat List
   const buildCommentTree = (flatComments) => {
     const commentMap = {};
     const roots = [];
 
-    // 1. Init map
     flatComments.forEach(c => {
       c.children = [];
       commentMap[c._id] = c;
     });
 
-    // 2. Link children
     flatComments.forEach(c => {
       if (c.parentComment) {
         if (commentMap[c.parentComment]) {
@@ -59,17 +57,14 @@ const PostDetails = ({ currentUser }) => {
     fetchData();
   }, [postId]);
 
-
-const handleSummarize = async () => {
+  const handleSummarize = async () => {
     if (!post?.content) return alert("This post has no text content to summarize.");
     
     setSummarizing(true);
     try {
       const res = await fetch(`${API_URL}/posts/summarize`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: post.content }),
       });
   
@@ -87,9 +82,6 @@ const handleSummarize = async () => {
       setSummarizing(false);
     }
   };
-
-
-
 
   const handleCommentSubmit = async () => {
     if (!currentUser) return alert("Log in to comment");
@@ -115,83 +107,81 @@ const handleSummarize = async () => {
     }
   };
 
-  if (loading) return <div style={{padding:'40px', textAlign:'center'}}>Loading...</div>;
-  if (!post) return <div style={{padding:'40px'}}>Post not found.</div>;
+  if (loading) return <div className="loading-state">Loading...</div>;
+  if (!post) return <div className="error-state">Post not found.</div>;
 
   return (
     <div className="main-container">
        <div className="posts-container">
           {/* Post Card */}
-          <Post post={{
+          <Post 
+            post={{
               ...post, 
               id: post._id, 
               user: `u/${post.username}`, 
               time: post.createdAt,
               mediaUrl: post.mediaUrl
-          }} onVote={() => {}} currentUser={currentUser} />
+            }} 
+            onVote={() => {}} 
+            currentUser={currentUser} 
+          />
 
-          {/* --- 3. INSERT AI SUMMARIZER UI HERE (Between Post and Comments) --- */}
-          <div style={{ marginTop: '10px', marginBottom: '10px', padding: '15px', background: 'white', borderRadius: '4px', border: '1px solid #ccc' }}>
+          {/* AI Summarizer */}
+          <div className={`summary-wrapper ${summary ? 'has-content' : ''}`}>
             {!summary ? (
               <button 
+                className="summarize-btn"
                 onClick={handleSummarize} 
                 disabled={summarizing}
-                style={{
-                  background: 'linear-gradient(45deg, #FF4500, #FF8755)', 
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 20px',
-                  borderRadius: '20px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  width: 'fit-content'
-                }}
               >
                 {summarizing ? '✨ Summarizing...' : '✨ Summarize this post with AI'}
               </button>
             ) : (
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                   <h4 style={{ margin: 0, color: '#FF4500', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <div className="summary-header">
+                   <h4 className="summary-title">
                      ✨ AI Summary
                    </h4>
-                   <button onClick={() => setSummary(null)} style={{ background: 'none', border: 'none', color: '#878a8c', cursor: 'pointer', fontSize: '12px' }}>Close</button>
+                   <button 
+                     className="close-summary-btn"
+                     onClick={() => setSummary(null)} 
+                   >
+                     Close
+                   </button>
                 </div>
-                <p style={{ fontSize: '14px', lineHeight: '1.6', color: '#1c1c1c', background: '#f6f7f8', padding: '10px', borderRadius: '4px' }}>
+                <p className="summary-text">
                   {summary}
                 </p>
               </div>
             )}
           </div>
-          {/* ----------------------------------------------------------------- */}
 
           {/* Comment Section */}
-          <div style={{ background: 'white', marginTop: '10px', padding: '20px', borderRadius: '4px' }}>
+          <div className="comments-section">
               
-              <div style={{ marginBottom: '30px' }}>
-                  <div style={{ fontSize: '12px', marginBottom: '5px' }}>
-                      Comment as <span style={{color: '#0079d3'}}>{currentUser?.username || currentUser || 'Guest'}</span>
+              <div className="comment-input-wrapper">
+                  <div className="comment-as">
+                      Comment as <span className="username-highlight">
+                        {currentUser?.username || currentUser || 'Guest'}
+                      </span>
                   </div>
                   <textarea 
+                    className="comment-textarea"
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     placeholder="What are your thoughts?"
-                    style={{ width: '100%', height: '100px', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
                   />
-                  <div style={{ textAlign: 'right', marginTop: '5px' }}>
+                  <div className="comment-actions">
                       <button 
+                        className="comment-submit-btn"
                         onClick={handleCommentSubmit}
-                        style={{ background: '#0079d3', color: 'white', border: 'none', padding: '6px 20px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' }}
                       >
                           Comment
                       </button>
                   </div>
               </div>
 
-              <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '20px 0' }} />
+              <hr className="divider" />
               
               {comments.length > 0 ? (
                   comments.map(c => (
@@ -203,19 +193,14 @@ const handleSummarize = async () => {
                     />
                   ))
               ) : (
-                  <div style={{ textAlign: 'center', color: '#777', padding: '20px' }}>
+                  <div className="no-comments">
                       No comments yet.
                   </div>
               )}
           </div>
        </div>
        
-       <div className="right-sidebar">
-          <div className="community-card">
-              <h3>About r/{post.community ? (post.community.startsWith('r/') ? post.community.substring(2) : post.community) : ''}</h3>
-              <p>Welcome to the discussion!</p>
-          </div>
-       </div>
+       {/* Sidebar removed as requested */}
     </div>
   );
 };

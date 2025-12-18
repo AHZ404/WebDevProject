@@ -162,12 +162,31 @@ const Post = ({ post, onVote, currentUser }) => {
       </div>
 
       <div className="post-content">
-        <div className="post-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span className="community-name">r/{communityNameClean}</span>
-            <span style={{ color: '#818384', margin: '0 4px' }}>•</span>
-            <span className="posted-by">{new Date(post.time).toLocaleDateString()}</span>
+        <div className="post-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {/* Top Line: Community Name */}
+            <span className="community-name" style={{ fontWeight: 'bold', fontSize: '12px' }}>
+              r/{communityNameClean}
+            </span>
+            
+            {/* Bottom Line: User and Date */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#818384', marginTop: '2px' }}>
+              {/* Clickable Username Link */}
+              <Link 
+                to={`/${post.user}`} /* Navigates to /u/username */
+                style={{ color: 'inherit', textDecoration: 'none' }}
+                onClick={(e) => e.stopPropagation()} /* Prevents opening post details when clicking user */
+                onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+                onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+              >
+                <span className="posted-by">{post.user || 'u/unknown'}</span>
+              </Link>
+              
+              <span>•</span>
+              <span>{new Date(post.time).toLocaleDateString()}</span>
+            </div>
           </div>
+
           <button 
             className="action-btn" 
             style={{ padding: '4px 8px', margin: 0, fontSize: '18px', color: '#818384' }}
@@ -202,7 +221,7 @@ const Post = ({ post, onVote, currentUser }) => {
                 src={finalMediaUrl} 
                 alt="Post content" 
                 onClick={() => setIsImageZoomed(true)} // Click to zoom
-                style={{ maxWidth: '100%',maxHeight: '500px',display: 'block',cursor: 'zoom-in', borderRadius: '4px'}} 
+                style={{ maxWidth: '100%', maxHeight: '500px', display: 'block', cursor: 'zoom-in', borderRadius: '4px' }} 
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}

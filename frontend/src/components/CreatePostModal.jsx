@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from './config.jsx';
+import './CreatePostModal.css';
 
 const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refreshPosts, currentCommunity = null }) => {
-  // Helper function to clean community name (remove r/ if present)
   const cleanCommunityName = (name) => {
     if (!name) return '';
     return name.startsWith('r/') ? name.substring(2) : name;
@@ -19,7 +19,6 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
 
-  // Update community when currentCommunity prop changes
   useEffect(() => {
     if (currentCommunity) {
       setNewPost(prev => ({ ...prev, community: cleanCommunityName(currentCommunity) }));
@@ -59,7 +58,6 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
 
     const formData = new FormData();
     formData.append('username', currentUser.username || currentUser);
-    // Ensure community name doesn't have r/ prefix
     formData.append('community', cleanCommunityName(newPost.community));
     formData.append('title', newPost.title);
     formData.append('content', newPost.content);
@@ -73,14 +71,11 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
           'Content-Type': 'multipart/form-data'
         }
       });
-      const createdPost = response.data;
       
-      // Call refresh function if provided
       if (refreshPosts) {
         refreshPosts();
       }
 
-      // Reset form
       setNewPost({
         title: '',
         content: '',
@@ -91,7 +86,6 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
       onClose();
     } catch (error) {
       console.error('❌ Post creation error:', error);
-      console.error('❌ Response:', error.response?.data);
       alert(`Failed to create post: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
@@ -114,161 +108,26 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
     onClose();
   };
 
-  const styles = {
-    overlay: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-    },
-    modal: {
-      backgroundColor: 'white',
-      borderRadius: '12px',
-      width: '600px',
-      maxWidth: '95%',
-      maxHeight: '90vh',
-      overflowY: 'auto',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    header: {
-      padding: '20px',
-      borderBottom: '1px solid #ccc',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    closeButton: {
-      background: 'none',
-      border: 'none',
-      fontSize: '24px',
-      cursor: 'pointer',
-      color: '#999',
-    },
-    content: {
-      padding: '20px',
-      flex: 1,
-    },
-    formGroup: {
-      marginBottom: '16px',
-    },
-    label: {
-      display: 'block',
-      marginBottom: '8px',
-      fontWeight: 'bold',
-      fontSize: '14px',
-      color: '#1c1c1c',
-    },
-    input: {
-      width: '100%',
-      padding: '10px',
-      border: '1px solid #ccc',
-      borderRadius: '4px',
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '14px',
-      boxSizing: 'border-box',
-    },
-    textarea: {
-      width: '100%',
-      padding: '10px',
-      border: '1px solid #ccc',
-      borderRadius: '4px',
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '14px',
-      minHeight: '120px',
-      boxSizing: 'border-box',
-      resize: 'vertical',
-    },
-    select: {
-      width: '100%',
-      padding: '10px',
-      border: '1px solid #ccc',
-      borderRadius: '4px',
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '14px',
-      boxSizing: 'border-box',
-    },
-    mediaBox: {
-      border: '1px dashed #ccc',
-      padding: '16px',
-      borderRadius: '4px',
-      textAlign: 'center',
-      marginBottom: '16px',
-    },
-    mediaPreview: {
-      marginBottom: '12px',
-    },
-    previewImage: {
-      maxWidth: '100%',
-      maxHeight: '200px',
-      borderRadius: '4px',
-    },
-    removeMediaButton: {
-      marginTop: '8px',
-      padding: '6px 12px',
-      background: '#ccc',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      fontSize: '14px',
-    },
-    footer: {
-      padding: '16px 20px',
-      borderTop: '1px solid #ccc',
-      display: 'flex',
-      gap: '10px',
-      justifyContent: 'flex-end',
-    },
-    button: {
-      padding: '8px 24px',
-      borderRadius: '20px',
-      border: 'none',
-      fontWeight: 'bold',
-      cursor: 'pointer',
-      fontSize: '14px',
-    },
-    postButton: {
-      background: '#0079d3',
-      color: 'white',
-    },
-    postButtonDisabled: {
-      background: '#ccc',
-      color: '#666',
-    },
-    cancelButton: {
-      background: '#f0f0f0',
-      color: '#1c1c1c',
-      border: '1px solid #ccc',
-    },
-  };
-
   return (
-    <div style={styles.overlay} onClick={handleCancel}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className="create-post-overlay" onClick={handleCancel}>
+      <div className="create-post-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div style={styles.header}>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>Create a Post</h2>
-          <button style={styles.closeButton} onClick={handleCancel}>
+        <div className="create-post-header">
+          <h2>Create a Post</h2>
+          <button className="close-btn" onClick={handleCancel}>
             ✕
           </button>
         </div>
 
         {/* Content */}
-        <div style={styles.content}>
+        <div className="create-post-content">
           {/* Community Selector */}
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Community *</label>
+          <div className="form-group">
+            <label className="form-label">Community *</label>
             <select
               value={newPost.community}
               onChange={(e) => setNewPost({ ...newPost, community: cleanCommunityName(e.target.value) })}
-              style={styles.select}
+              className="form-select"
             >
               {communities.map((comm) => {
                 const cleanName = cleanCommunityName(comm.name);
@@ -282,60 +141,58 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
           </div>
 
           {/* Title Input */}
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Title *</label>
+          <div className="form-group">
+            <label className="form-label">Title *</label>
             <input
               type="text"
               placeholder="Enter post title"
               value={newPost.title}
               onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-              style={styles.input}
+              className="form-input"
             />
           </div>
 
           {/* Content Textarea */}
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Content</label>
+          <div className="form-group">
+            <label className="form-label">Content</label>
             <textarea
               placeholder="Enter post content (optional)"
               value={newPost.content}
               onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-              style={styles.textarea}
+              className="form-textarea"
             />
           </div>
 
           {/* Media Upload */}
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Image or Video</label>
-            <div style={styles.mediaBox}>
+          <div className="form-group">
+            <label className="form-label">Image or Video</label>
+            <div className="media-upload-box">
               {mediaPreview ? (
-                <div>
-                  <div style={styles.mediaPreview}>
-                    {mediaFile.type.startsWith('image/') ? (
-                      <img
-                        src={mediaPreview}
-                        alt="Preview"
-                        style={styles.previewImage}
-                      />
-                    ) : (
-                      <video
-                        controls
-                        src={mediaPreview}
-                        style={styles.previewImage}
-                      />
-                    )}
-                  </div>
+                <div className="media-preview-container">
+                  {mediaFile.type.startsWith('image/') ? (
+                    <img
+                      src={mediaPreview}
+                      alt="Preview"
+                      className="media-preview-img"
+                    />
+                  ) : (
+                    <video
+                      controls
+                      src={mediaPreview}
+                      className="media-preview-img"
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={handleRemoveMedia}
-                    style={styles.removeMediaButton}
+                    className="remove-media-btn"
                   >
                     Remove Media
                   </button>
                 </div>
               ) : (
-                <label style={{ display: 'block', cursor: 'pointer' }}>
-                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
+                <label className="upload-label">
+                  <div style={{ marginBottom: '8px' }}>
                     Click to upload Image/Video
                   </div>
                   <input
@@ -351,20 +208,17 @@ const CreatePostModal = ({ isOpen, onClose, communities = [], currentUser, refre
         </div>
 
         {/* Footer */}
-        <div style={styles.footer}>
+        <div className="create-post-footer">
           <button
             onClick={handleCancel}
-            style={{ ...styles.button, ...styles.cancelButton }}
+            className="btn btn-cancel"
           >
             Cancel
           </button>
           <button
             onClick={handleCreatePost}
             disabled={loading}
-            style={{
-              ...styles.button,
-              ...(loading ? styles.postButtonDisabled : styles.postButton),
-            }}
+            className="btn btn-submit"
           >
             {loading ? 'Posting...' : 'Post'}
           </button>

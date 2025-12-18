@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from './config';
+import './CommentItem.css'; // Import the CSS file
 
 const CommentItem = ({ comment, postId, currentUser }) => {
   const [showReplyForm, setShowReplyForm] = useState(false);
@@ -8,17 +9,8 @@ const CommentItem = ({ comment, postId, currentUser }) => {
   const [votes, setVotes] = useState(comment.votes || 0);
   const [userVote, setUserVote] = useState(0); 
 
-  const nestedStyle = {
-    marginLeft: '20px',
-    borderLeft: '2px solid #edeff1', 
-    paddingLeft: '10px',
-    marginTop: '10px'
-  };
-
-  // <--- UPDATED: Reset votes instantly on logout
   useEffect(() => {
     if (currentUser) {
-        // If logged in, check if we voted
         const username = currentUser.username || currentUser;
         const upvoted = (comment.upvotedBy || []).includes(username);
         const downvoted = (comment.downvotedBy || []).includes(username);
@@ -27,7 +19,6 @@ const CommentItem = ({ comment, postId, currentUser }) => {
         else if (downvoted) setUserVote(-1);
         else setUserVote(0);
     } else {
-        // <--- THIS FIXES THE BUG: If logged out, reset to grey immediately
         setUserVote(0);
     }
   }, [currentUser, comment]);
@@ -85,50 +76,117 @@ const CommentItem = ({ comment, postId, currentUser }) => {
     } catch (err) { console.error(err); }
   };
 
-  const getVoteColor = (dir) => userVote === dir ? (dir === 1 ? '#ff4500' : '#7193ff') : 'inherit';
+  // Determine vote count class
+  const getVoteCountClass = () => {
+    if (userVote === 1) return 'vote-count up';
+    if (userVote === -1) return 'vote-count down';
+    return 'vote-count';
+  };
 
   return (
-    <div style={comment.parentComment ? nestedStyle : { marginTop: '15px' }}>
-      <div style={{ fontSize: '12px', color: '#555', marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
-        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#ccc', marginRight: '8px' }}></div>
-        <strong>{comment.author?.username || 'u/deleted'}</strong>
-        <span style={{ margin: '0 5px' }}>•</span>
+    <div className={`comment-item ${comment.parentComment ? 'nested' : ''}`}>
+      
+      {/* Header */}
+      <div className="comment-header">
+        <div className="user-avatar"></div>
+        <strong className="author-name">{comment.author?.username || 'u/deleted'}</strong>
+        <span className="separator">•</span>
         <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
       </div>
 
-      <div style={{ fontSize: '14px', marginBottom: '8px', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
+      {/* Content */}
+      <div className="comment-content">
         {comment.content}
       </div>
 
-      <div style={{ display: 'flex', gap: '15px', fontSize: '12px', color: '#878a8c', fontWeight: 'bold', alignItems: 'center' }}>
-        <div style={{ cursor: 'pointer', color: getVoteColor(1) }} onClick={() => handleVote('up')}>⬆</div>
-        <div style={{ color: userVote !== 0 ? (userVote === 1 ? '#ff4500' : '#7193ff') : 'inherit' }}>{votes}</div>
-        <div style={{ cursor: 'pointer', color: getVoteColor(-1) }} onClick={() => handleVote('down')}>⬇</div>
-        <div style={{ cursor: 'pointer', marginLeft: '10px' }} onClick={() => setShowReplyForm(!showReplyForm)}>Reply</div>
-        {/* Delete button for comment owner */}
+      {/* Actions Bar */}
+      <div className="comment-actions">
+        {/* Upvote */}
+        <div 
+          className={`vote-btn up ${userVote === 1 ? 'active' : ''}`}
+          onClick={() => handleVote('up')}
+        >
+          ⬆
+        </div>
+        
+        {/* Vote Count */}
+        <div className={getVoteCountClass()}>
+          {votes}
+        </div>
+        
+        {/* Downvote */}
+        <div 
+          className={`vote-btn down ${userVote === -1 ? 'active' : ''}`} 
+          onClick={() => handleVote('down')}
+        >
+          ⬇
+        </div>
+        
+        {/* Reply Button */}
+        <div 
+          className="action-btn"
+          onClick={() => setShowReplyForm(!showReplyForm)}
+        >
+          Reply
+        </div>
+        
+        {/* Delete Button (Conditional) */}
         {currentUser && (currentUser.username || currentUser) === (comment.author?.username) && (
-          <div style={{ cursor: 'pointer', marginLeft: '10px', color: '#ff585b' }} onClick={async () => {
-            if (!confirm('Delete this comment?')) return;
-            try {
-              const username = currentUser.username || currentUser;
-              const res = await fetch(`${API_URL}/comments/${comment._id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
-              if (res.ok) window.location.reload(); else { const data = await res.json(); alert(data.message || 'Failed to delete'); }
-            } catch (err) { console.error(err); alert('Failed to delete'); }
-          }}>Delete</div>
+          <div 
+            className="action-btn delete"
+            onClick={async () => {
+              if (!confirm('Delete this comment?')) return;
+              try {
+                const username = currentUser.username || currentUser;
+                const res = await fetch(`${API_URL}/comments/${comment._id}`, { 
+                  method: 'DELETE', 
+                  headers: { 'Content-Type': 'application/json' }, 
+                  body: JSON.stringify({ username }) 
+                });
+                if (res.ok) window.location.reload(); 
+                else { 
+                  const data = await res.json(); 
+                  alert(data.message || 'Failed to delete'); 
+                }
+              } catch (err) { 
+                console.error(err); 
+                alert('Failed to delete'); 
+              }
+            }}
+          >
+            Delete
+          </div>
         )}
       </div>
 
+      {/* Reply Form */}
       {showReplyForm && (
-         <div style={{ marginTop: '10px' }}>
-            <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="What are your thoughts?" style={{ width: '100%', padding: '8px', border: '1px solid #ccc', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }} />
-            <button onClick={handleReplySubmit} style={{ marginTop: '5px', padding: '4px 12px', background: '#0079d3', color: 'white', border: 'none', borderRadius: '15px', cursor: 'pointer' }}>Reply</button>
+         <div className="reply-form-container">
+            <textarea 
+              className="reply-textarea"
+              value={replyContent} 
+              onChange={(e) => setReplyContent(e.target.value)} 
+              placeholder="What are your thoughts?" 
+            />
+            <button 
+              className="reply-submit-btn"
+              onClick={handleReplySubmit} 
+            >
+              Reply
+            </button>
          </div>
       )}
 
+      {/* Nested Children */}
       {comment.children && comment.children.length > 0 && (
         <div className="comment-children">
           {comment.children.map(childReply => (
-            <CommentItem key={childReply._id} comment={childReply} postId={postId} currentUser={currentUser} />
+            <CommentItem 
+              key={childReply._id} 
+              comment={childReply} 
+              postId={postId} 
+              currentUser={currentUser} 
+            />
           ))}
         </div>
       )}
