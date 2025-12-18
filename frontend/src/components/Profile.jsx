@@ -28,7 +28,8 @@ const Profile = ({ currentUser }) => {
     const [postsLoading, setPostsLoading] = useState(false);
     const [adminActions, setAdminActions] = useState([]); // admin audit log
 
-    const isOwner = currentUser && currentUser.toLowerCase() === username.toLowerCase();
+    const isOwner = currentUser && currentUser.username && username && 
+                   currentUser.username.toLowerCase() === username.toLowerCase();
 
     // 1. FETCH PROFILE DATA
     useEffect(() => {
@@ -37,34 +38,57 @@ const Profile = ({ currentUser }) => {
             try {
                 console.log(`📥 Fetching profile for: ${username}`);
                 const response = await fetch(`${API_URL}/users/${username}`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to fetch profile');
+                }
+                
                 const data = await response.json();
                 console.log('Profile data received:', data);
-                if (!response.ok) throw new Error(data.message);
-                setProfileData(data);
-                setBioText(data.profile.bio || '');
-                console.log('Avatar from DB:', data.profile.avatar);
-                console.log('Banner from DB:', data.profile.banner);
-
+                
+                // Check if data has expected structure
+                if (!data) {
+                    throw new Error('No profile data received');
+                }
+                
+                // Ensure profile object exists with defaults
+                const profileWithDefaults = {
+                    ...data,
+                    profile: data.profile || {
+                        bio: '',
+                        cakeDay: new Date().toISOString(),
+                        avatar: '',
+                        banner: ''
+                    }
+                };
+                
+                setProfileData(profileWithDefaults);
+                setBioText(profileWithDefaults.profile.bio || '');
+                
                 // If profile belongs to an admin, fetch their admin action history
-                if (data.role === 'admin') {
-                    (async () => {
-                        try {
-                            const res = await fetch(`${API_URL}/admin/actions/${username}`);
+                if (profileWithDefaults.role === 'admin') {
+                    try {
+                        const res = await fetch(`${API_URL}/admin/actions/${username}`);
+                        if (res.ok) {
                             const actions = await res.json();
-                            if (res.ok) setAdminActions(actions);
-                        } catch (err) {
-                            console.error('Failed to fetch admin actions:', err);
+                            setAdminActions(actions);
                         }
-                    })();
+                    } catch (err) {
+                        console.error('Failed to fetch admin actions:', err);
+                    }
                 }
             } catch (err) {
                 console.error('❌ Error fetching profile:', err);
-                setError(err.message);
+                setError(err.message || 'An error occurred while loading the profile');
             } finally {
                 setLoading(false);
             }
         };
-        fetchProfile();
+        
+        if (username) {
+            fetchProfile();
+        }
     }, [username]); 
 
     // 2. FETCH POSTS OR COMMENTS (Based on activeTab)
@@ -74,15 +98,24 @@ const Profile = ({ currentUser }) => {
             try {
                 if (activeTab === 'posts') {
                     const response = await fetch(`${API_URL}/users/${username}/posts`);
-                    const data = await response.json();
-                    if (response.ok) setUserPosts(data);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setUserPosts(data || []);
+                    }
                 } else {
                     const response = await fetch(`${API_URL}/comments/user/${username}`);
-                    const data = await response.json();
-                    if (response.ok) setUserComments(data);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setUserComments(data || []);
+                    }
                 }
             } catch (err) {
                 console.error('Fetch Error:', err);
+                if (activeTab === 'posts') {
+                    setUserPosts([]);
+                } else {
+                    setUserComments([]);
+                }
             } finally {
                 setPostsLoading(false);
             }
@@ -110,28 +143,35 @@ const Profile = ({ currentUser }) => {
                 method: 'PATCH',
                 body: formData
             });
+            
             const data = await response.json();
             console.log('📥 Response data:', data);
             
             if (response.ok) {
                 console.log('✅ Profile saved successfully');
-                console.log('Avatar path:', data.avatar);
-                console.log('Banner path:', data.banner);
                 
-                setProfileData(prev => ({ 
-                    ...prev, 
-                    profile: { 
-                        ...prev.profile, 
-                        bio: data.newBio,
-                        avatar: data.avatar || prev.profile.avatar,
-                        banner: data.banner || prev.profile.banner
-                    } 
-                }));
+                // Update profile data with new values
+                setProfileData(prev => {
+                    if (!prev) return prev;
+                    
+                    return { 
+                        ...prev, 
+                        profile: { 
+                            ...prev.profile, 
+                            bio: data.newBio || bioText,
+                            avatar: data.avatar || prev.profile.avatar,
+                            banner: data.banner || prev.profile.banner
+                        } 
+                    };
+                });
+                
                 setIsEditing(false);
                 setAvatarFile(null);
                 setAvatarPreview(null);
                 setBannerFile(null);
                 setBannerPreview(null);
+                
+                alert('Profile updated successfully!');
             } else {
                 console.error('❌ Error response:', data);
                 alert('Failed to save profile: ' + (data.message || 'Unknown error'));
@@ -160,6 +200,9 @@ const Profile = ({ currentUser }) => {
 
     if (loading) return <div style={styles.loading}>Loading profile...</div>;
     if (error) return <div style={styles.error}>Error: {error}</div>;
+    
+    // Check if profileData is loaded
+    if (!profileData) return <div style={styles.error}>Profile not found</div>;
 
     return (
         <div style={styles.pageContainer}>
@@ -171,7 +214,7 @@ const Profile = ({ currentUser }) => {
                 {(bannerPreview || profileData.profile.banner) && (
                     <div style={{ 
                         height: '150px', 
-                        background: '#f0f0f0', 
+                        background: '#1a1a1b', 
                         marginBottom: '10px',
                         borderRadius: '4px',
                         backgroundImage: bannerPreview || (profileData.profile.banner ? `url(${API_URL}/${profileData.profile.banner})` : 'none'),
@@ -184,8 +227,18 @@ const Profile = ({ currentUser }) => {
                 <div style={styles.headerCard}>
                     <div style={styles.headerTop}>
                          {/* Avatar Placeholder */}
-                         <div style={{...styles.avatar, backgroundImage: avatarPreview || profileData.profile.avatar ? `url(${avatarPreview || (profileData.profile.avatar ? `${API_URL}/${profileData.profile.avatar}` : '')})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', fontSize: avatarPreview || profileData.profile.avatar ? '0' : '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
-                            {!avatarPreview && !profileData.profile.avatar && profileData.username[0].toUpperCase()}
+                         <div style={{
+                            ...styles.avatar, 
+                            backgroundImage: avatarPreview || profileData.profile.avatar ? `url(${avatarPreview || (profileData.profile.avatar ? `${API_URL}/${profileData.profile.avatar}` : '')})` : 'none', 
+                            backgroundSize: 'cover', 
+                            backgroundPosition: 'center', 
+                            fontSize: avatarPreview || profileData.profile.avatar ? '0' : '40px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            position: 'relative'
+                         }}>
+                            {!avatarPreview && !profileData.profile.avatar && profileData.username && profileData.username[0].toUpperCase()}
                             {isOwner && (
                                 <input 
                                     type="file" 
@@ -199,10 +252,10 @@ const Profile = ({ currentUser }) => {
                          <div>
                             <h1 style={styles.usernameTitle}>u/{profileData.username}</h1>
                             <div style={styles.cakeDay}>
-                                Cake Day: {new Date(profileData.profile.cakeDay).toLocaleDateString()}
+                                Cake Day: {new Date(profileData.profile.cakeDay || new Date()).toLocaleDateString()}
                             </div>
                             {isOwner && (
-                                <label htmlFor="avatar-upload" style={{ cursor: 'pointer', color: '#0079d3', fontSize: '12px', fontWeight: 'bold', marginTop: '8px', display: 'inline-block' }}>
+                                <label htmlFor="avatar-upload" style={{ cursor: 'pointer', color: '#4fbcff', fontSize: '12px', fontWeight: 'bold', marginTop: '8px', display: 'inline-block' }}>
                                     Change Avatar
                                 </label>
                             )}
@@ -210,43 +263,64 @@ const Profile = ({ currentUser }) => {
                     </div>
                     
                     <h3 style={styles.sectionTitle}>About Me</h3>
-                    
-
-
-
 
                     {isEditing ? ( <>
-
                             <div style={{ marginBottom: '15px' }}>
-                                <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Profile Picture</label>
+                                <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#d7dadc' }}>Profile Picture</label>
                                 <input 
                                     type="file" 
                                     accept="image/*" 
                                     onChange={handleAvatarChange} 
-                                    style={{ marginBottom: '10px' }}
+                                    style={{ 
+                                        marginBottom: '10px',
+                                        color: '#d7dadc',
+                                        backgroundColor: '#1a1a1b',
+                                        border: '1px solid #343536',
+                                        padding: '8px',
+                                        borderRadius: '4px',
+                                        width: '100%'
+                                    }}
                                 />
                                 {avatarPreview && (
                                     <div>
-                                        <img src={avatarPreview} alt="Avatar preview" style={{ maxHeight: '80px', width: '80px', borderRadius: '50%', objectFit: 'cover' }} />
+                                        <img src={avatarPreview} alt="Avatar preview" style={{ maxHeight: '80px', width: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #343536' }} />
                                         <button type="button" onClick={() => { setAvatarFile(null); setAvatarPreview(null); }} style={{ marginLeft: '10px', color: '#ff4500', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
                                     </div>
                                 )}
                             </div>
 
                             <div style={{ marginBottom: '15px' }}>
-                                <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Profile Banner</label>
+                                <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#d7dadc' }}>Profile Banner</label>
                                 <input 
                                     type="file" 
                                     accept="image/*" 
                                     onChange={handleBannerChange} 
-                                    style={{ marginBottom: '10px' }}
+                                    style={{ 
+                                        marginBottom: '10px',
+                                        color: '#d7dadc',
+                                        backgroundColor: '#1a1a1b',
+                                        border: '1px solid #343536',
+                                        padding: '8px',
+                                        borderRadius: '4px',
+                                        width: '100%'
+                                    }}
                                 />
                                 {bannerPreview && (
                                     <div>
-                                        <img src={bannerPreview} alt="Banner preview" style={{ maxHeight: '100px', maxWidth: '100%', borderRadius: '4px', objectFit: 'cover' }} />
+                                        <img src={bannerPreview} alt="Banner preview" style={{ maxHeight: '100px', maxWidth: '100%', borderRadius: '4px', objectFit: 'cover', border: '1px solid #343536' }} />
                                         <button type="button" onClick={() => { setBannerFile(null); setBannerPreview(null); }} style={{ marginLeft: '10px', color: '#ff4500', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
                                     </div>
                                 )}
+                            </div>
+                            
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#d7dadc' }}>Bio</label>
+                                <textarea 
+                                    value={bioText}
+                                    onChange={(e) => setBioText(e.target.value)}
+                                    placeholder="Tell us about yourself..."
+                                    style={styles.textarea}
+                                />
                             </div>
                             
                             <div style={styles.buttonGroup}>
@@ -256,7 +330,9 @@ const Profile = ({ currentUser }) => {
                         </>
                     ) : (
                         <div>
-                            <p style={{...styles.bioText, whiteSpace: 'pre-wrap', wordWrap: 'break-word'}}>{profileData.profile.bio || "No bio yet."}</p>
+                            <p style={{...styles.bioText, whiteSpace: 'pre-wrap', wordWrap: 'break-word'}}>
+                                {profileData.profile.bio || "No bio yet."}
+                            </p>
                             {isOwner && (
                                 <button onClick={() => setIsEditing(true)} style={styles.editBtn}>
                                     Edit Bio
@@ -271,16 +347,16 @@ const Profile = ({ currentUser }) => {
                   <div style={{ marginTop: '20px' }}>
                     <h3 style={styles.sectionTitle}>Admin Action History</h3>
                     {adminActions.length === 0 ? (
-                      <div style={{ color: '#666', fontSize: '13px' }}>No admin actions recorded yet.</div>
+                      <div style={{ color: '#818384', fontSize: '13px' }}>No admin actions recorded yet.</div>
                     ) : (
                       <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
                         {adminActions.map(act => (
-                          <li key={act._id} style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
-                            <div style={{ fontSize: '13px', color: '#333' }}>
+                          <li key={act._id} style={{ padding: '8px 0', borderBottom: '1px solid #343536' }}>
+                            <div style={{ fontSize: '13px', color: '#d7dadc' }}>
                               <strong style={{ textTransform: 'capitalize' }}>{act.actionType}</strong> {act.targetType} — {act.targetSummary}
                             </div>
-                            <div style={{ fontSize: '12px', color: '#777' }}>{new Date(act.createdAt).toLocaleString()}</div>
-                            {act.details && <div style={{ fontSize: '12px', color: '#555', marginTop: '4px' }}>{act.details}</div>}
+                            <div style={{ fontSize: '12px', color: '#818384' }}>{new Date(act.createdAt).toLocaleString()}</div>
+                            {act.details && <div style={{ fontSize: '12px', color: '#b0b3b4', marginTop: '4px' }}>{act.details}</div>}
                           </li>
                         ))}
                       </ul>
@@ -338,7 +414,7 @@ const Profile = ({ currentUser }) => {
                           <div key={comment._id} style={styles.commentCard}>
                             <div style={styles.commentHeader}>
                               <span style={styles.commentMeta}>
-                                <span style={styles.authorName}>{comment.author.username}</span> commented on 
+                                <span style={styles.authorName}>{comment.author?.username || 'Unknown'}</span> commented on 
                                 
                                 {comment.post ? (
                                   <Link 
@@ -356,12 +432,14 @@ const Profile = ({ currentUser }) => {
                                   r/{comment.post?.community ? (comment.post.community.startsWith('r/') ? comment.post.community.substring(2) : comment.post.community) : ''}
                                 </span>
                                 <span style={styles.metaDivider}>•</span>
-                                <span style={styles.timestamp}>{new Date(comment.createdAt).toLocaleDateString()}</span>
+                                <span style={styles.timestamp}>
+                                  {new Date(comment.createdAt || Date.now()).toLocaleDateString()}
+                                </span>
                               </span>
                             </div>
 
                             <div style={styles.commentBody}>
-                              <p style={{margin: 0}}>{comment.content}</p>
+                              <p style={{margin: 0, color: '#d7dadc'}}>{comment.content || 'No content'}</p>
                             </div>
                             
                             <div style={styles.commentFooter}>
@@ -379,12 +457,12 @@ const Profile = ({ currentUser }) => {
                     <h3 style={styles.karmaTitle}>Karma</h3>
                     <div style={styles.karmaContent}>
                         <div style={styles.karmaRow}>
-                            <span>Post Karma</span>
-                            <strong>{profileData.karma.postKarma}</strong>
+                            <span style={styles.karmaLabel}>Post Karma</span>
+                            <strong style={styles.karmaValue}>{profileData.karma?.postKarma || 0}</strong>
                         </div>
                         <div style={styles.karmaRow}>
-                            <span>Comment Karma</span>
-                            <strong>{profileData.karma.commentKarma}</strong>
+                            <span style={styles.karmaLabel}>Comment Karma</span>
+                            <strong style={styles.karmaValue}>{profileData.karma?.commentKarma || 0}</strong>
                         </div>
                     </div>
                 </div>
@@ -399,24 +477,25 @@ const styles = {
         maxWidth: '1000px',
         margin: '0 auto',
         padding: '20px',
-        backgroundColor: '#dae0e6',
+        backgroundColor: '#030303', // Dark background like home page
         display: 'grid',
         gridTemplateColumns: '1fr 312px',
         gap: '24px',
         alignItems: 'start',
+        minHeight: '100vh'
     },
     mainContent: {
         minWidth: 0, // Prevents grid blowout
     },
     sidebar: {
-        display: 'block', // Hidden on mobile via media query logic if you used CSS, here it stays block
+        display: 'block',
     },
     // Header Card
     headerCard: {
-        background: 'white',
+        background: '#1a1a1b', // Dark card background
         padding: '20px',
         borderRadius: '4px',
-        border: '1px solid #ccc',
+        border: '1px solid #343536', // Dark border
         marginBottom: '20px',
     },
     headerTop: {
@@ -427,7 +506,7 @@ const styles = {
     avatar: {
         width: '80px',
         height: '80px',
-        background: '#ff4500',
+        background: 'linear-gradient(135deg, #ff4500, #ff6314)', // Orange gradient like Reddit
         borderRadius: '50%',
         display: 'flex',
         alignItems: 'center',
@@ -435,84 +514,95 @@ const styles = {
         color: 'white',
         fontSize: '30px',
         fontWeight: 'bold',
-        border: '4px solid white',
+        border: '4px solid #1a1a1b', // Dark border
     },
     usernameTitle: {
         marginBottom: '5px',
         fontSize: '22px',
-        color: '#1c1c1c',
+        color: '#ffffff', // White text
     },
     cakeDay: {
         fontSize: '14px',
-        color: '#787c7e',
+        color: '#818384', // Light gray text
     },
     sectionTitle: {
         marginTop: '20px',
         marginBottom: '10px',
         fontSize: '14px',
         textTransform: 'uppercase',
-        color: '#7c7c7c',
+        color: '#818384', // Light gray
         fontWeight: '700',
     },
     bioText: {
         marginBottom: '10px',
         lineHeight: '1.5',
         fontSize: '14px',
-        color: '#1c1c1c',
+        color: '#d7dadc', // Light gray text
     },
     // Buttons
     editBtn: {
-        color: '#0079d3',
+        color: '#4fbcff', // Bright blue
         background: 'none',
         border: 'none',
         cursor: 'pointer',
         fontWeight: 'bold',
         padding: 0,
         fontSize: '14px',
-    },
-    bioEditContainer: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
+        '&:hover': {
+            textDecoration: 'underline'
+        }
     },
     textarea: {
         width: '100%',
         minHeight: '100px',
         padding: '10px',
         borderRadius: '4px',
-        border: '1px solid #edeff1',
+        border: '1px solid #343536', // Dark border
         fontFamily: 'inherit',
         resize: 'vertical',
+        fontSize: '14px',
+        backgroundColor: '#1a1a1b', // Dark background
+        color: '#d7dadc', // Light text
     },
     buttonGroup: {
         display: 'flex',
         gap: '10px',
     },
     saveBtn: {
-        background: '#0079d3',
+        background: '#0079d3', // Reddit blue
         color: 'white',
         border: 'none',
-        padding: '6px 16px',
+        padding: '8px 20px',
         borderRadius: '20px',
         cursor: 'pointer',
         fontWeight: 'bold',
+        fontSize: '14px',
+        transition: 'background-color 0.2s',
+        '&:hover': {
+            backgroundColor: '#0060a9',
+        }
     },
     cancelBtn: {
-        background: '#edeff1',
-        color: '#1c1c1c',
-        border: 'none',
-        padding: '6px 16px',
+        background: '#272729', // Dark gray
+        color: '#d7dadc', // Light text
+        border: '1px solid #343536',
+        padding: '8px 20px',
         borderRadius: '20px',
         cursor: 'pointer',
         fontWeight: 'bold',
+        fontSize: '14px',
+        transition: 'background-color 0.2s',
+        '&:hover': {
+            backgroundColor: '#343536',
+        }
     },
     // Tabs
     tabsContainer: {
         display: 'flex',
-        backgroundColor: 'white',
+        backgroundColor: '#1a1a1b', // Dark background
         borderRadius: '4px 4px 0 0',
-        border: '1px solid #ccc',
-        borderBottom: '1px solid #ccc',
+        border: '1px solid #343536', // Dark border
+        borderBottom: '1px solid #343536',
         overflow: 'hidden',
         marginBottom: '15px',
     },
@@ -523,20 +613,20 @@ const styles = {
         border: 'none',
         fontWeight: 'bold',
         cursor: 'pointer',
-        color: '#878a8c',
+        color: '#818384', // Light gray
         fontSize: '14px',
         borderBottom: '3px solid transparent',
         transition: 'all 0.2s',
     },
     tabBtnActive: {
-        color: '#0079d3',
-        borderBottom: '3px solid #0079d3',
-        backgroundColor: 'rgba(0, 121, 211, 0.05)',
+        color: '#ffffff', // White text
+        borderBottom: '3px solid #0079d3', // Blue underline
+        backgroundColor: '#272729', // Darker background for active tab
     },
     // Comment Card Styles
     commentCard: {
-        background: 'white',
-        border: '1px solid #cccccc',
+        background: '#1a1a1b', // Dark background
+        border: '1px solid #343536', // Dark border
         borderRadius: '4px',
         marginBottom: '12px',
         padding: '12px',
@@ -544,31 +634,34 @@ const styles = {
     },
     commentHeader: {
         fontSize: '12px',
-        color: '#787c7e',
+        color: '#818384', // Light gray
         marginBottom: '8px',
         display: 'flex',
         alignItems: 'center',
         flexWrap: 'wrap',
     },
     authorName: {
-        color: '#1c1c1c',
+        color: '#ffffff', // White
         fontWeight: 'bold',
         marginRight: '4px',
     },
     postLink: {
-        color: '#0079d3',
+        color: '#4fbcff', // Bright blue
         fontWeight: '600',
         textDecoration: 'none',
         margin: '0 4px',
+        '&:hover': {
+            textDecoration: 'underline'
+        }
     },
     communityName: {
-        color: '#1c1c1c',
+        color: '#d7dadc', // Light gray
         fontWeight: 'bold',
         margin: '0 4px',
     },
     metaDivider: {
         margin: '0 2px',
-        color: '#878a8c',
+        color: '#818384', // Light gray
     },
     timestamp: {
         marginLeft: '4px',
@@ -576,32 +669,32 @@ const styles = {
     commentBody: {
         fontSize: '14px',
         lineHeight: '1.5',
-        color: '#1c1c1c',
+        color: '#d7dadc', // Light gray text
         padding: '10px 12px',
-        backgroundColor: '#f6f7f8',
+        backgroundColor: '#272729', // Darker gray background
         borderRadius: '4px',
         marginTop: '6px',
     },
     commentFooter: {
         marginTop: '8px',
         fontSize: '12px',
-        color: '#878a8c',
+        color: '#818384', // Light gray
         fontWeight: 'bold',
     },
     voteLabel: {
-        color: '#ff4500',
+        color: '#ff4500', // Reddit orange
     },
     // Right Sidebar Karma
     karmaCard: {
-        background: 'white',
+        background: '#1a1a1b', // Dark background
         padding: '20px',
         borderRadius: '4px',
-        border: '1px solid #ccc',
+        border: '1px solid #343536', // Dark border
     },
     karmaTitle: {
         fontSize: '14px',
         textTransform: 'uppercase',
-        color: '#787c7e',
+        color: '#818384', // Light gray
         letterSpacing: '0.5px',
         marginBottom: '12px',
         marginTop: 0,
@@ -613,26 +706,38 @@ const styles = {
         display: 'flex',
         justifyContent: 'space-between',
         marginBottom: '8px',
-        color: '#1c1c1c',
+        color: '#d7dadc', // Light text
+    },
+    karmaLabel: {
+        color: '#d7dadc', // Light gray
+    },
+    karmaValue: {
+        color: '#ffffff', // White
     },
     // Utility
     loading: {
         textAlign: 'center',
         padding: '40px',
-        color: '#787c7e',
+        color: '#818384', // Light gray
+        fontSize: '16px',
+        backgroundColor: '#030303', // Dark background
+        minHeight: '100vh'
     },
     error: {
         textAlign: 'center',
         padding: '40px',
-        color: 'red',
+        color: '#ff4500', // Reddit orange for errors
+        fontSize: '16px',
+        backgroundColor: '#030303', // Dark background
+        minHeight: '100vh'
     },
     emptyState: {
         textAlign: 'center',
         padding: '40px',
-        backgroundColor: 'white',
-        border: '1px solid #ccc',
+        backgroundColor: '#1a1a1b', // Dark background
+        border: '1px solid #343536', // Dark border
         borderRadius: '4px',
-        color: '#787c7e',
+        color: '#818384', // Light gray text
     }
 };
 

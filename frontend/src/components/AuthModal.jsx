@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './AuthModal.css';
 
-const AuthModal = ({ isOpen, onClose, onLogin }) => {
-  const [isLogin, setIsLogin] = useState(true);
+const AuthModal = ({ isOpen, onClose, onLogin, mode = 'login' }) => {
+  const [isLogin, setIsLogin] = useState(mode === 'login');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -10,12 +10,23 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
     confirmPassword: ''
   });
 
-  // 1. Made function async to handle the API request
+  // Reset form when modal opens or mode changes
+  useEffect(() => {
+    setIsLogin(mode === 'login');
+    setFormData({
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    });
+  }, [mode, isOpen]);
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (isLogin) {
-      // Login logic (Unchanged)
+      // Login logic
       console.log('Logging in:', { username: formData.username, password: formData.password });
       onLogin(formData.username);
       onClose();
@@ -26,7 +37,12 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
         return;
       }
 
-      // --- NEW CODE STARTS HERE ---
+      if (!formData.email) {
+        alert("Email is required for registration!");
+        return;
+      }
+
+      // Make API call to register user
       try {
         const response = await fetch('http://localhost:3000/users/signup', {
           method: 'POST',
@@ -46,8 +62,8 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
           // Success!
           console.log('Registered User:', data);
           alert("Account created successfully!");
-          onLogin(data.user.username); // Log the user in with the username from DB
-          onClose(); // Close the modal
+          onLogin(data.user.username);
+          onClose();
         } else {
           // Error (e.g., User already exists)
           alert(data.message || "Registration failed");
@@ -56,7 +72,6 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
         console.error("Connection Error:", error);
         alert("Could not connect to the server.");
       }
-      // --- NEW CODE ENDS HERE ---
     }
   };
 
@@ -69,6 +84,16 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
 
   const switchToSignup = () => {
     setIsLogin(false);
+    setFormData({
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    });
+  };
+
+  const switchToLogin = () => {
+    setIsLogin(true);
     setFormData({
       username: '',
       email: '',
@@ -104,7 +129,7 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
               placeholder="Email"
               value={formData.email}
               onChange={handleChange}
-              required
+              required={!isLogin}
             />
           )}
           <input
@@ -144,7 +169,8 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
             {isLogin ? "New to Reddit? " : "Already a redditor? "}
             <button 
               className="switch-btn"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={isLogin ? switchToSignup : switchToLogin}
+              type="button"
             >
               {isLogin ? 'SIGN UP' : 'LOG IN'}
             </button>
@@ -156,10 +182,10 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
         </div>
 
         <div className="social-auth">
-          <button className="social-btn google-btn">
+          <button className="social-btn google-btn" type="button">
             Continue with Google
           </button>
-          <button className="social-btn apple-btn">
+          <button className="social-btn apple-btn" type="button">
             Continue with Apple
           </button>
         </div>
