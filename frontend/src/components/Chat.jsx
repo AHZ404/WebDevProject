@@ -77,6 +77,19 @@ const Chat = ({ currentUser }) => {
     }
   };
 
+  // ✅ NEW: Refresh button should refresh the currently open chat messages too
+  const handleRefresh = async () => {
+    try {
+      if (selectedChat) {
+        await fetchMessages(selectedChat); // this already refreshes conversations + scrolls
+      } else {
+        await fetchConversations(); // if no chat selected, refresh list only
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (!currentUser)
     return <div style={{ padding: 20 }}>Please log in to use chats.</div>;
 
@@ -97,8 +110,9 @@ const Chat = ({ currentUser }) => {
           }}
         >
           <strong>Messages</strong>
-          <button onClick={fetchConversations}>Refresh</button>
+          <button onClick={handleRefresh}>Refresh</button>
         </div>
+
         {conversations.map((c) => (
           <div
             key={c._id}

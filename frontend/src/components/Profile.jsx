@@ -402,8 +402,14 @@ const Profile = ({ currentUser }) => {
                       alert("Failed to start chat");
                     }
                   }}
-                  style={{ ...styles.startChatBtn }}
+                  style={{
+                    ...styles.startChatBtn,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
                 >
+                  <span style={styles.chatIcon}>💬</span>
                   Start Chat
                 </button>
               </div>
@@ -780,6 +786,7 @@ const styles = {
   sidebar: {
     display: "block",
   },
+
   // Header Card
   headerCard: {
     background: "#1a1a1b",
@@ -802,20 +809,8 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     color: "white",
-    startChatBtn: {
-      background: "#2a9d8f",
-      color: "white",
-      border: "none",
-      padding: "8px 12px",
-      borderRadius: "20px",
-      cursor: "pointer",
-      fontWeight: "700",
-      fontSize: "14px",
-    },
-    marginBottom: "5px",
-    fontSize: "22px",
-    color: "#ffffff",
   },
+
   cakeDay: {
     fontSize: "14px",
     color: "#818384",
@@ -834,6 +829,7 @@ const styles = {
     fontSize: "14px",
     color: "#d7dadc",
   },
+
   // Buttons
   editBtn: {
     color: "#4fbcff",
@@ -892,7 +888,7 @@ const styles = {
     },
   },
 
-  // ✅ Follow button styles (added)
+  // Follow button styles
   followBtn: {
     background: "#ff4500",
     color: "white",
@@ -908,6 +904,24 @@ const styles = {
     background: "#272729",
     border: "1px solid #343536",
     color: "#d7dadc",
+  },
+
+  // ✅ Start Chat button styles (ADDED – correct place)
+  startChatBtn: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 16px",
+    borderRadius: 999,
+    background: "#f2f3f4",
+    color: "#111",
+    border: "1px solid #d0d0d0",
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "background 0.2s ease, box-shadow 0.2s ease",
+  },
+  chatIcon: {
+    fontSize: 16,
   },
 
   tabsContainer: {
@@ -936,6 +950,7 @@ const styles = {
     borderBottom: "3px solid #0079d3",
     backgroundColor: "#272729",
   },
+
   // Comment Card Styles
   commentCard: {
     background: "#1a1a1b",
@@ -997,6 +1012,7 @@ const styles = {
   voteLabel: {
     color: "#ff4500",
   },
+
   // Right Sidebar Karma
   karmaCard: {
     background: "#1a1a1b",
@@ -1027,6 +1043,7 @@ const styles = {
   karmaValue: {
     color: "#ffffff",
   },
+
   // Utility
   loading: {
     textAlign: "center",
@@ -1053,5 +1070,6 @@ const styles = {
     color: "#818384",
   },
 };
+
 
 export default Profile;
