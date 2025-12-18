@@ -13,7 +13,6 @@ import { API_URL } from "./components/config.jsx";
 import PostDetails from './components/PostDetails';
 import SearchResults from "./components/SearchResults";
 
-
 const App = () => {
   const [posts, setPosts] = useState([]);
   const [communities, setCommunities] = useState([]); 
@@ -23,6 +22,13 @@ const App = () => {
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [sortBy, setSortBy] = useState('hot');
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+
+  // Handle auth button clicks from Header
+  const handleAuthClick = (mode = 'login') => {
+    setAuthMode(mode);
+    setShowAuthModal(true);
+  };
 
   // 1. Fetch Posts (Username Check)
   const fetchPosts = async () => {
@@ -103,10 +109,20 @@ const App = () => {
   }, [sortBy]); // <--- This triggers the re-fetch when the dropdown changes
 
   const handleLogin = (user) => {
-    setCurrentUser(user);
+    // Handle both string usernames and user objects from registration
+    let userData;
+    if (typeof user === 'string') {
+      userData = { username: user };
+    } else if (user && user.username) {
+      userData = { username: user.username };
+    } else {
+      userData = user;
+    }
+    
+    setCurrentUser(userData);
     setShowAuthModal(false);
-    localStorage.setItem("user", JSON.stringify(user));
-    fetchPosts(); 
+    localStorage.setItem("user", JSON.stringify(userData));
+    fetchPosts();
   };
 
   const handleLogout = () => {
@@ -117,7 +133,10 @@ const App = () => {
   };
 
   const handleVote = async (postId, direction) => {
-    if (!currentUser) return alert("You must be logged in to vote!");
+    if (!currentUser) {
+      handleAuthClick('login');
+      return;
+    }
 
     const post = posts.find(p => p.id === postId);
     if (!post) return;
@@ -144,11 +163,26 @@ const App = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 direction, 
-                // SEND USERNAME
                 username: currentUser.username || currentUser 
             })
         });
     } catch (error) { console.error("Vote error:", error); }
+  };
+
+  const handleCreatePostClick = () => {
+    if (!currentUser) {
+      handleAuthClick('login');
+    } else {
+      setShowCreatePostModal(true);
+    }
+  };
+
+  const handleCreateCommunityClick = () => {
+    if (!currentUser) {
+      handleAuthClick('login');
+    } else {
+      setShowCommunityModal(true);
+    }
   };
 
   return (
@@ -156,16 +190,17 @@ const App = () => {
       <div className="app">
         <Header 
           currentUser={currentUser} 
-          onAuthClick={() => setShowAuthModal(true)} 
+          onAuthClick={handleAuthClick} 
           onLogout={handleLogout} 
-          onCreateCommunityClick={() => setShowCommunityModal(true)}
-          onCreatePostClick={() => setShowCreatePostModal(true)}
+          onCreateCommunityClick={handleCreateCommunityClick}
+          onCreatePostClick={handleCreatePostClick}
         />
         
         <AuthModal 
           isOpen={showAuthModal} 
           onClose={() => setShowAuthModal(false)} 
           onLogin={handleLogin} 
+          mode={authMode}
         />
         
         <CreateCommunityModal 
@@ -190,7 +225,7 @@ const App = () => {
                 onCreatePost={fetchPosts} 
                 currentUser={currentUser} 
                 communities={communities}
-                onCreatePostClick={() => setShowCreatePostModal(true)}
+                onCreatePostClick={handleCreatePostClick}
               />
               
               <div className="posts-container">
@@ -232,7 +267,7 @@ const App = () => {
           <Route path="/r/:communityName" element={
             <Community 
               currentUser={currentUser} 
-              onCreatePostClick={() => setShowCreatePostModal(true)}
+              onCreatePostClick={handleCreatePostClick}
               communities={communities}
               refreshPosts={fetchPosts}
             />
@@ -246,4 +281,5 @@ const App = () => {
     </Router>
   );
 };
+
 export default App;
