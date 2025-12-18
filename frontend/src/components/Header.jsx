@@ -242,7 +242,7 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick, on
                     if (currentUser) {
                       onCreatePostClick();
                     } else {
-                      onAuthClick();
+                      onAuthClick('login');
                     }
                   }}
                 >
@@ -257,7 +257,7 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick, on
                     if (currentUser) {
                       onCreateCommunityClick();
                     } else {
-                      onAuthClick();
+                      onAuthClick('login');
                     }
                   }}
                 >
@@ -274,18 +274,94 @@ const Header = ({ currentUser, onAuthClick, onLogout, onCreateCommunityClick, on
           </button>
 
           {currentUser ? (
-            <div 
-              className="user-avatar" 
-              title={currentUser.username || currentUser}
-              onClick={() => navigate(`/u/${currentUser.username || currentUser}`)}
-              style={{ cursor: 'pointer' }}
-            >
-              {(currentUser.username || currentUser).charAt(0).toUpperCase()}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div 
+                className="user-avatar" 
+                title={currentUser.username || currentUser}
+                onClick={() => navigate(`/u/${currentUser.username || currentUser}`)}
+                style={{ 
+                  cursor: 'pointer',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #ff4500, #ff6314)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  position: 'relative'
+                }}
+              >
+                {(currentUser.username || currentUser).charAt(0).toUpperCase()}
+              </div>
+              <button 
+                style={{
+                  padding: '6px 16px',
+                  background: 'transparent',
+                  color: '#d7dadc',
+                  border: '1px solid #343536',
+                  borderRadius: '20px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'background-color 0.2s, border-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#272729';
+                  e.target.style.borderColor = '#818384';
+                  e.target.style.color = '#ffffff';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'transparent';
+                  e.target.style.borderColor = '#343536';
+                  e.target.style.color = '#d7dadc';
+                }}
+                onClick={onLogout}
+              >
+                Log Out
+              </button>
             </div>
           ) : (
-            <button className="login-btn" onClick={onAuthClick}>
-              Log In
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button 
+                style={{
+                  padding: '6px 16px',
+                  background: '#ffffff',
+                  color: '#1a1a1b',
+                  border: 'none',
+                  borderRadius: '20px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#e9e9e9'}
+                onMouseLeave={(e) => e.target.style.background = '#ffffff'}
+                onClick={() => onAuthClick('signup')}
+              >
+                Sign Up
+              </button>
+              <button 
+                style={{
+                  padding: '6px 16px',
+                  background: '#0079d3',  // Changed to blue background
+                  color: '#ffffff',        // Changed to white text
+                  border: 'none',          // Removed border
+                  borderRadius: '20px',
+                  fontWeight: 700,         // Made bold like Sign Up
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#0060a9'}
+                onMouseLeave={(e) => e.target.style.background = '#0079d3'}
+                onClick={() => onAuthClick('login')}
+              >
+                Log In
+              </button>
+            </div>
           )}
         </div>
       </nav>

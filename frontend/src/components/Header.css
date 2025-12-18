@@ -267,21 +267,6 @@
   border-color: #818384;
 }
 
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ff4500, #ff6314);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  position: relative;
-  border: 2px solid #1a1a1b;
-}
 
 .user-avatar::after {
   content: '';
@@ -374,4 +359,117 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Add to Header.css */
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.signup-btn {
+  padding: 6px 16px;
+  background: #ffffff;
+  color: #1a1a1b;
+  border: none;
+  border-radius: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.signup-btn:hover {
+  background: #e9e9e9;
+}
+
+.login-btn {
+  padding: 6px 16px;
+  background: transparent;
+  color: #d7dadc;
+  border: 1px solid #343536;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.login-btn:hover {
+  background: #272729;
+  border-color: #818384;
+}
+
+/* Update the existing .login-btn style to target only when it's alone */
+.nav-links > .login-btn {
+  padding: 6px 20px;
+  background: #ff4500;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.nav-links > .login-btn:hover {
+  background: #ff6314;
+}
+
+/* Header.css - Add these styles at the end of the file */
+
+/* Auth buttons container */
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Sign Up button */
+.signup-btn {
+  padding: 6px 16px;
+  background: #ffffff;
+  color: #1a1a1b;
+  border: none;
+  border-radius: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.signup-btn:hover {
+  background: #e9e9e9;
+}
+
+/* Log In button */
+.login-btn {
+  padding: 6px 16px;
+  background: transparent;
+  color: #d7dadc;
+  border: 1px solid #343536;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.login-btn:hover {
+  background: #272729;
+  border-color: #818384;
+}
+
+/* Remove the old login button styles that might conflict */
+.nav-links > .login-btn:not(.auth-buttons .login-btn) {
+  display: none;
+}
+
+/* Ensure the buttons are visible */
+.nav-links .auth-buttons {
+  display: flex;
+  visibility: visible;
+  opacity: 1;
 }
