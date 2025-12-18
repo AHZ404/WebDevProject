@@ -1,0 +1,147 @@
+/* CommentItem.css */
+
+/* Define the colors used in the original JS */
+:root {
+  --text-color: #d7dadc;
+  --muted-text: #818384;
+  --bg-color: #1a1a1b;
+  --border-color: #343536;
+  --hover-bg: #272729;
+  --upvote-color: #ff4500;
+  --downvote-color: #7193ff;
+  --delete-color: #ff585b;
+  --avatar-bg: #555;
+  --btn-primary: #0079d3;
+}
+
+.comment-item {
+  margin-top: 15px;
+}
+
+/* The nested style logic */
+.comment-item.nested {
+  margin-left: 20px;
+  border-left: 2px solid var(--border-color);
+  padding-left: 10px;
+  margin-top: 10px;
+}
+
+/* Header Section */
+.comment-header {
+  font-size: 12px;
+  color: var(--muted-text);
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--avatar-bg);
+  margin-right: 8px;
+}
+
+.author-name {
+  color: var(--text-color);
+  font-weight: bold;
+}
+
+.separator {
+  margin: 0 5px;
+  color: var(--muted-text);
+}
+
+/* Content Section */
+.comment-content {
+  font-size: 14px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--text-color);
+}
+
+/* Actions/Voting Section */
+.comment-actions {
+  display: flex;
+  gap: 15px;
+  font-size: 12px;
+  color: var(--muted-text);
+  font-weight: bold;
+  align-items: center;
+}
+
+.vote-btn, .action-btn {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+}
+
+.vote-btn:hover, .action-btn:hover {
+  background-color: var(--hover-bg);
+}
+
+/* Dynamic Vote Colors */
+.vote-btn.up.active {
+  color: var(--upvote-color);
+}
+
+.vote-btn.down.active {
+  color: var(--downvote-color);
+}
+
+.vote-count {
+  min-width: 20px;
+  text-align: center;
+  color: var(--text-color);
+}
+
+.vote-count.up {
+  color: var(--upvote-color);
+}
+
+.vote-count.down {
+  color: var(--downvote-color);
+}
+
+.action-btn {
+  margin-left: 10px;
+}
+
+.action-btn.delete {
+  color: var(--delete-color);
+}
+
+/* Reply Form */
+.reply-form-container {
+  margin-top: 10px;
+}
+
+.reply-textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  resize: vertical;
+}
+
+.reply-submit-btn {
+  margin-top: 5px;
+  padding: 4px 12px;
+  background: var(--btn-primary);
+  color: white;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+}
+
+.reply-submit-btn:hover {
+  opacity: 0.9;
+}

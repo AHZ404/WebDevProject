@@ -10,7 +10,6 @@ const AuthModal = ({ isOpen, onClose, onLogin, mode = 'login' }) => {
     confirmPassword: ''
   });
 
-  // Reset form when modal opens or mode changes
   useEffect(() => {
     setIsLogin(mode === 'login');
     setFormData({
@@ -21,17 +20,14 @@ const AuthModal = ({ isOpen, onClose, onLogin, mode = 'login' }) => {
     });
   }, [mode, isOpen]);
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (isLogin) {
-      // Login logic
-      console.log('Logging in:', { username: formData.username, password: formData.password });
+      // In a real app, you would validate login here too
       onLogin(formData.username);
       onClose();
     } else {
-      // Register logic
       if (formData.password !== formData.confirmPassword) {
         alert("Passwords don't match!");
         return;
@@ -42,7 +38,6 @@ const AuthModal = ({ isOpen, onClose, onLogin, mode = 'login' }) => {
         return;
       }
 
-      // Make API call to register user
       try {
         const response = await fetch('http://localhost:3000/users/signup', {
           method: 'POST',
@@ -59,13 +54,10 @@ const AuthModal = ({ isOpen, onClose, onLogin, mode = 'login' }) => {
         const data = await response.json();
 
         if (response.ok) {
-          // Success!
-          console.log('Registered User:', data);
           alert("Account created successfully!");
           onLogin(data.user.username);
           onClose();
         } else {
-          // Error (e.g., User already exists)
           alert(data.message || "Registration failed");
         }
       } catch (error) {
@@ -107,7 +99,13 @@ const AuthModal = ({ isOpen, onClose, onLogin, mode = 'login' }) => {
   return (
     <div className="auth-modal-overlay">
       <div className="auth-modal">
-        <button className="close-btn" onClick={onClose}>×</button>
+        <button 
+          className="close-btn" 
+          onClick={onClose}
+          aria-label="Close modal"
+        >
+          ×
+        </button>
         
         <div className="auth-header">
           <img 
@@ -116,8 +114,7 @@ const AuthModal = ({ isOpen, onClose, onLogin, mode = 'login' }) => {
           />
           <h2>{isLogin ? 'Log in' : 'Sign up'}</h2>
           <p className="auth-subtitle">
-            {isLogin ? 'By continuing, you agree to our User Agreement and Privacy Policy.' 
-                     : 'By continuing, you agree to our User Agreement and Privacy Policy.'}
+            By continuing, you agree to our User Agreement and Privacy Policy.
           </p>
         </div>
 

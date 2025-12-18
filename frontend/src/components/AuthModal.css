@@ -1,10 +1,12 @@
+/* AuthModal.css */
+
 .auth-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.85); /* Updated to match darkStyles */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -12,24 +14,26 @@
 }
 
 .auth-modal {
-  background: white;
+  background: #1a1a1b; /* Dark background */
+  border: 1px solid #343536;
   border-radius: 8px;
   padding: 24px;
   width: 90%;
   max-width: 400px;
   position: relative;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  color: #d7dadc; /* Default text color */
 }
 
 .close-btn {
   position: absolute;
   top: 16px;
   right: 16px;
-  background: none;
+  background: transparent;
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: #878a8c;
+  color: #d7dadc;
   padding: 0;
   width: 30px;
   height: 30px;
@@ -37,10 +41,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.2s;
 }
 
 .close-btn:hover {
-  background: #f6f7f8;
+  background: #272729;
 }
 
 .auth-header {
@@ -51,17 +56,18 @@
 .auth-header img {
   height: 40px;
   margin-bottom: 12px;
+  filter: brightness(1.2); /* Copied from JSX */
 }
 
 .auth-header h2 {
-  color: #1c1c1c;
+  color: #d7dadc;
   font-size: 20px;
   font-weight: 500;
   margin-bottom: 8px;
 }
 
 .auth-subtitle {
-  color: #787c7e;
+  color: #818384;
   font-size: 12px;
   line-height: 1.4;
   max-width: 300px;
@@ -77,16 +83,18 @@
 
 .auth-form input {
   padding: 12px;
-  border: 1px solid #edeff1;
+  border: 1px solid #343536;
   border-radius: 4px;
   font-size: 14px;
-  background: #fcfcfb;
+  background: #272729;
+  color: #d7dadc;
+  transition: all 0.2s ease;
 }
 
 .auth-form input:focus {
   outline: none;
   border-color: #0079d3;
-  background: white;
+  background: #1a1a1b;
 }
 
 .auth-submit-btn {
@@ -99,6 +107,7 @@
   cursor: pointer;
   font-size: 14px;
   margin-top: 8px;
+  transition: background-color 0.2s;
 }
 
 .auth-submit-btn:hover {
@@ -111,7 +120,7 @@
 }
 
 .auth-switch p {
-  color: #787c7e;
+  color: #818384;
   font-size: 12px;
 }
 
@@ -122,6 +131,7 @@
   cursor: pointer;
   font-weight: bold;
   text-decoration: underline;
+  margin-left: 4px;
 }
 
 .switch-btn:hover {
@@ -141,15 +151,17 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: #edeff1;
+  background: #343536; /* Dark divider line */
 }
 
 .auth-divider span {
-  background: white;
+  background: #1a1a1b; /* Matches modal bg */
   padding: 0 16px;
-  color: #787c7e;
+  color: #818384;
   font-size: 12px;
   font-weight: bold;
+  position: relative; /* Ensures it sits on top of ::before */
+  z-index: 1;
 }
 
 .social-auth {
@@ -160,9 +172,10 @@
 
 .social-btn {
   padding: 12px;
-  border: 1px solid #edeff1;
+  border: 1px solid #343536;
   border-radius: 20px;
-  background: white;
+  background: #272729;
+  color: #d7dadc;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -170,17 +183,9 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  transition: background-color 0.2s;
 }
 
 .social-btn:hover {
-  background: #f6f7f8;
+  background: #343536;
 }
-
-.google-btn {
-  color: #1c1c1c;
-}
-
-.apple-btn {
-  color: #1c1c1c;
-}
-
