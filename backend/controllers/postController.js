@@ -2,6 +2,7 @@
 const Post = require('../models/post');
 const User = require('../models/user');
 const http = require('http');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Helper function for debug logging
 const fs = require('fs');
@@ -494,53 +495,92 @@ const searchPosts = async (req, res) => {
 };
 
 
-
 const summarizePost = async (req, res) => {
   try {
     const { content } = req.body;
+    if (!content) return res.status(400).json({ message: "No content to summarize" });
 
-    if (!content) {
-      return res.status(400).json({ message: "No content to summarize" });
+    if (!process.env.GEMINI_API_KEY) {
+        throw new Error("Missing GEMINI_API_KEY in .env file");
     }
 
-    console.log("1. AI Request Started...");
+    console.log("1. Fetching model list from Google...");
 
-    const MODEL_URL = "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn";
+    const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
+    const listData = await listResponse.json();
 
-    const response = await fetch(MODEL_URL, {
-        headers: {
-          Authorization: `Bearer ${process.env.HUGGING_FACE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-        body: JSON.stringify({ inputs: content }),
+    if (listData.error) {
+        throw new Error("Google API Error: " + listData.error.message);
+    }
+
+    const availableModels = listData.models || [];
+    
+    const SAFE_MODELS = [
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-001",
+        "gemini-1.5-flash-002",
+        "gemini-1.5-flash-8b",
+        "gemini-1.0-pro",
+        "gemini-pro" 
+    ];
+
+    let selectedModelObj = availableModels.find(m => {
+        const name = m.name.replace("models/", "");
+        return SAFE_MODELS.includes(name) && !name.includes("latest");
     });
 
-    const result = await response.json();
-    console.log("2. AI Status:", response.status);
-
-    if (result.error && result.error.includes("loading")) {
-        // Return 503 so the frontend knows to try again
-        return res.status(503).json({ message: "AI is warming up... please click Summarize again in 20 seconds!" });
+    // Fallback: If exact matches fail, find *any* "flash" model that isn't "latest"
+    if (!selectedModelObj) {
+        selectedModelObj = availableModels.find(m => 
+            m.name.includes("flash") && !m.name.includes("latest")
+        );
     }
 
-    if (response.status !== 200) {
-        console.error("AI Error:", result);
-        return res.status(response.status).json({ message: "AI Error: " + (result.error || "Unknown error") });
+    if (!selectedModelObj) {
+        // If absolutely nothing safe is found, list what we HAVE so we can debug
+        console.log("Only found these models (none were safe):", availableModels.map(m => m.name));
+        throw new Error("No free-tier models found for this API Key.");
     }
 
-    const summary = Array.isArray(result) ? result[0]?.summary_text : result?.summary_text;
+    const modelName = selectedModelObj.name.replace("models/", ""); 
+    console.log(`2. Selected Safe Model: ${modelName}`);
+
+    // STEP 3: Generate Summary
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${process.env.GEMINI_API_KEY}`;
     
-    if (!summary) throw new Error("No summary returned");
+    const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            contents: [{
+                parts: [{
+                    text: `Summarize the following Reddit post. Return ONLY the summary text. Do not use introductory phrases like "Here is a summary" or "The user is saying". Just give the summary directly.\n\nPost Content: "${content}"`
+                }]
+            }]
+        })
+    });
 
+    const data = await response.json();
+
+    // Handle Rate Limits (429) Gracefully
+    if (data.error) {
+        if (data.error.code === 429) {
+            return res.status(429).json({ message: "AI is busy. Please wait 30 seconds." });
+        }
+        throw new Error(data.error.message);
+    }
+
+    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!summary) throw new Error("AI returned empty response.");
+
+    console.log("3. Success!");
     res.status(200).json({ summary });
 
   } catch (error) {
     console.error("AI Controller Error:", error.message);
-    res.status(500).json({ message: "Failed to generate summary" });
+    res.status(500).json({ message: "AI Error: " + error.message });
   }
 };
-
 
 
 module.exports = { getAllPosts, createPost, getPostsByUser, votePost, getPostById , searchPosts, deletePost, summarizePost };

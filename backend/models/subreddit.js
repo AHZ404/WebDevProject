@@ -33,6 +33,11 @@ const subredditSchema = new mongoose.Schema({
     type: Number,
     default: 1
   },
+  // NEW: Track specific users to prevent duplicate joins
+  membersList: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

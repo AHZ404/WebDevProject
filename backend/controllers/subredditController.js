@@ -73,7 +73,9 @@ const createSubreddit = async (req, res) => {
       creator: user._id,
       logo: logoPath,
       banner: bannerPath,
-      members: 1
+      members: 1,
+      // NEW: Add creator to members list immediately
+      membersList: [user._id]
     });
 
     console.log("✅ SUCCESS! Subreddit created.");
@@ -174,4 +176,102 @@ const updateSubreddit = async (req, res) => {
   }
 };
 
-module.exports = { getSubreddits, createSubreddit, getSubredditByName, updateSubreddit };
+// --- NEW JOIN/LEAVE FEATURES (FIXED LOGIC) ---
+
+const joinSubreddit = async (req, res) => {
+    try {
+        let { name } = req.params;
+        const { username } = req.body;
+
+        if (name && name.startsWith('r/')) name = name.substring(2);
+
+        // Find User
+        const user = await User.findOne({ username });
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // CRITICAL FIX: Only update IF user is NOT in membersList ($ne = Not Equal)
+        // This prevents the count from increasing if they click join twice
+        const subreddit = await Subreddit.findOneAndUpdate(
+            { name, membersList: { $ne: user._id } }, 
+            { 
+                $addToSet: { membersList: user._id }, 
+                $inc: { members: 1 } 
+            },
+            { new: true }
+        );
+        
+        // If subreddit is null, check if it was because they were already a member
+        if (!subreddit) {
+            const existing = await Subreddit.findOne({ name });
+            if (!existing) return res.status(404).json({ message: "Subreddit not found" });
+            
+            // Return success but don't change anything
+            return res.status(200).json({ 
+                message: "Already joined", 
+                members: existing.members, 
+                membersList: existing.membersList 
+            });
+        }
+
+        // Optional: Update User's joinedSubreddits list too
+        await User.findByIdAndUpdate(user._id, {
+            $addToSet: { joinedSubreddits: subreddit._id }
+        });
+
+        res.status(200).json({ message: "Joined", members: subreddit.members, membersList: subreddit.membersList });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const leaveSubreddit = async (req, res) => {
+    try {
+        let { name } = req.params;
+        const { username } = req.body;
+
+        if (name && name.startsWith('r/')) name = name.substring(2);
+
+        // Find User
+        const user = await User.findOne({ username });
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // CRITICAL FIX: Only update IF user IS in membersList
+        const subreddit = await Subreddit.findOneAndUpdate(
+            { name, membersList: user._id }, 
+            { 
+                $pull: { membersList: user._id }, 
+                $inc: { members: -1 } 
+            },
+            { new: true }
+        );
+
+        if (!subreddit) {
+            const existing = await Subreddit.findOne({ name });
+            if (!existing) return res.status(404).json({ message: "Subreddit not found" });
+             
+            return res.status(200).json({ 
+                message: "Already left", 
+                members: existing.members, 
+                membersList: existing.membersList 
+            });
+        }
+
+        // Optional: Update User
+        await User.findByIdAndUpdate(user._id, {
+            $pull: { joinedSubreddits: subreddit._id }
+        });
+
+        res.status(200).json({ message: "Left", members: subreddit.members, membersList: subreddit.membersList });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { 
+    getSubreddits, 
+    createSubreddit, 
+    getSubredditByName, 
+    updateSubreddit, 
+    joinSubreddit, 
+    leaveSubreddit 
+};
