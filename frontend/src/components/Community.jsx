@@ -109,16 +109,21 @@ const Community = ({
         membersList: data.membersList || prev.membersList,
       }));
 
-      // Persist join status locally so the button remains "Joined"
+      // Persist per-user join status locally so the button remains "Joined"
       // after navigation until the user explicitly leaves.
       try {
-        const key = `joined_${cleanName}`;
-        if (action === "join") {
-          localStorage.setItem(key, "true");
-          setIsJoined(true);
-        } else {
-          localStorage.removeItem(key);
-          setIsJoined(false);
+        const usernameKey =
+          currentUser?.username ||
+          (typeof currentUser === "string" ? currentUser : null);
+        if (usernameKey) {
+          const key = `joined_${usernameKey}_${cleanName}`;
+          if (action === "join") {
+            localStorage.setItem(key, "true");
+            setIsJoined(true);
+          } else {
+            localStorage.removeItem(key);
+            setIsJoined(false);
+          }
         }
       } catch (e) {
         /* ignore localStorage errors */
@@ -297,10 +302,22 @@ const Community = ({
             } else {
               // Fallback: check localStorage flag preserved after a successful join
               try {
-                const key = `joined_${cleanName}`;
-                const savedFlag = localStorage.getItem(key);
-                if (savedFlag === "true") {
-                  setIsJoined(true);
+                // Only consider per-user localStorage fallback when an effective user exists
+                if (effectiveUser) {
+                  const usernameKey =
+                    effectiveUser.username ||
+                    (typeof effectiveUser === "string" ? effectiveUser : null);
+                  if (usernameKey) {
+                    const key = `joined_${usernameKey}_${cleanName}`;
+                    const savedFlag = localStorage.getItem(key);
+                    if (savedFlag === "true") {
+                      setIsJoined(true);
+                    } else {
+                      setIsJoined(false);
+                    }
+                  } else {
+                    setIsJoined(false);
+                  }
                 } else {
                   setIsJoined(false);
                 }
@@ -382,18 +399,23 @@ const Community = ({
       const bannerUrl = getMediaUrl(subreddit.banner);
       console.log("🎨 Banner URL being used:", bannerUrl);
 
-      return {
-        height: "200px",
-        backgroundImage: `url("${bannerUrl}")`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        position: "relative",
-        marginBottom: "0",
-        cursor: "pointer",
-        opacity: bannerLoaded ? 1 : 0.8,
-        transition: "opacity 0.3s ease-in-out",
-      };
+      try {
+        const usernameKey =
+          currentUser?.username ||
+          (typeof currentUser === "string" ? currentUser : null);
+        if (usernameKey) {
+          const key = `joined_${usernameKey}_${cleanName}`;
+          if (action === "join") {
+            localStorage.setItem(key, "true");
+            setIsJoined(true);
+          } else {
+            localStorage.removeItem(key);
+            setIsJoined(false);
+          }
+        }
+      } catch (e) {
+        /* ignore localStorage errors */
+      }
     }
     return {
       height: "200px",

@@ -121,21 +121,67 @@ const App = () => {
     fetchPosts();
   }, [sortBy]); // <--- This triggers the re-fetch when the dropdown changes
 
-  const handleLogin = (user) => {
-    // Handle both string usernames and user objects from registration
+  // Best-effort: if we only have username, fetch _id so join checks work after relogin
+  async function hydrateUserIdIfMissing(u) {
+    try {
+      if (!u || typeof u !== "object") return u;
+      if (u._id || u.id) return u;
+      if (!u.username) return u;
+
+      const res = await fetch(
+        `${API_URL}/users/${encodeURIComponent(u.username)}`
+      );
+      if (!res.ok) return u;
+
+      const data = await res.json();
+      if (data && (data._id || data.id)) {
+        return { ...u, _id: data._id || u._id, id: data.id || u.id };
+      }
+      return u;
+    } catch (e) {
+      return u;
+    }
+  }
+
+  // If we restored a saved user without _id/id, hydrate it once so join state persists
+  useEffect(() => {
+    const run = async () => {
+      if (!currentUser || typeof currentUser !== "object") return;
+      if (currentUser._id || currentUser.id) return;
+      if (!currentUser.username) return;
+
+      const hydrated = await hydrateUserIdIfMissing(currentUser);
+      if (hydrated && (hydrated._id || hydrated.id)) {
+        setCurrentUser(hydrated);
+        try {
+          localStorage.setItem("user", JSON.stringify(hydrated));
+        } catch (e) {}
+      }
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
+
+  const handleLogin = async (user) => {
+    // ✅ IMPORTANT: preserve full user object (especially _id/id)
+    // so membership checks against membersList (ObjectIds) work after relogin.
     let userData;
     if (typeof user === "string") {
       userData = { username: user };
-    } else if (user && user.username) {
-      userData = { username: user.username };
+    } else if (user && typeof user === "object") {
+      userData = { ...user };
+      if (!userData.username && user.username) userData.username = user.username;
     } else {
       userData = user;
     }
+
+    userData = await hydrateUserIdIfMissing(userData);
 
     setCurrentUser(userData);
     setShowAuthModal(false);
     localStorage.setItem("user", JSON.stringify(userData));
     fetchPosts();
+    fetchCommunities();
   };
 
   const handleLogout = () => {
@@ -143,6 +189,7 @@ const App = () => {
     localStorage.removeItem("user");
     alert("Logged out successfully.");
     fetchPosts();
+    fetchCommunities();
   };
 
   const handleVote = async (postId, direction) => {

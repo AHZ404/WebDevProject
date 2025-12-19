@@ -56,9 +56,12 @@ const RightSidebar = ({ communities, currentUser, refreshCommunities }) => {
         });
       }
 
-      if (!isMember) {
+      // Only use localStorage fallback when we have an effective user
+      if (!isMember && effectiveUser) {
         try {
-          const flag = localStorage.getItem(`joined_${clean}`);
+          const usernameKey =
+            currentUsername || effectiveUser.username || effectiveUser;
+          const flag = localStorage.getItem(`joined_${usernameKey}_${clean}`);
           if (flag === "true") isMember = true;
         } catch (e) {}
       }
@@ -195,16 +198,22 @@ const RightSidebar = ({ communities, currentUser, refreshCommunities }) => {
                       }
 
                       // Persist local flag so button remains until user acts again
-                      const storageKey = `joined_${key}`;
-                      if (action === "join") {
-                        try {
-                          localStorage.setItem(storageKey, "true");
-                        } catch (e) {}
-                      } else {
-                        try {
-                          localStorage.removeItem(storageKey);
-                        } catch (e) {}
-                      }
+                      // Persist a per-user local flag so button remains until user acts again
+                      try {
+                        const usernameKey =
+                          currentUser?.username ||
+                          (typeof currentUser === "string"
+                            ? currentUser
+                            : null);
+                        if (usernameKey) {
+                          const storageKey = `joined_${usernameKey}_${key}`;
+                          if (action === "join") {
+                            localStorage.setItem(storageKey, "true");
+                          } else {
+                            localStorage.removeItem(storageKey);
+                          }
+                        }
+                      } catch (e) {}
 
                       // Refresh communities list from parent to get updated member counts
                       if (typeof refreshCommunities === "function") {
