@@ -56,6 +56,22 @@ const RightSidebar = ({ communities, currentUser, refreshCommunities }) => {
         });
       }
 
+      // If user created the community, they should be treated as joined
+      if (!isMember && comm.creator) {
+        const creator = comm.creator;
+        if (typeof creator === "string") {
+          isMember =
+            (currentUserId && creator.toString() === currentUserId) ||
+            (currentUsername && creator === currentUsername);
+        } else if (typeof creator === "object") {
+          const cid = creator._id || creator.id;
+          const cusername = creator.username;
+          isMember =
+            (currentUserId && cid && cid.toString() === currentUserId) ||
+            (currentUsername && cusername === currentUsername);
+        }
+      }
+
       // Only use localStorage fallback when we have an effective user
       if (!isMember && effectiveUser) {
         try {
