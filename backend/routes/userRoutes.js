@@ -9,10 +9,13 @@ const {
   getUserProfile,
   updateUserProfile,
   followUser,
-  unfollowUser
+  unfollowUser,
+  searchUsers
 } = require('../controllers/userController');
 
 const { getPostsByUser } = require('../controllers/postController');
+
+router.get('/search', searchUsers);
 
 // ✅ Follow/Unfollow routes (added, does not affect existing routes)
 // POST /users/:username/follow

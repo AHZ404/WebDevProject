@@ -7,12 +7,14 @@ const {
     getSubredditByName, 
     updateSubreddit,
     joinSubreddit,
-    leaveSubreddit
+    leaveSubreddit,
+    searchSubreddits
 } = require('../controllers/subredditController');
 
 console.log('Subreddit routes loaded');
 
 router.get('/', getSubreddits);
+router.get('/search', searchSubreddits);
 router.get('/:name', getSubredditByName);
 
 // POST route with multer middleware for file uploads

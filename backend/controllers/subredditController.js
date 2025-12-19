@@ -267,11 +267,31 @@ const leaveSubreddit = async (req, res) => {
     }
 };
 
+
+
+const searchSubreddits = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.status(400).json({ message: "Query required" });
+
+    const subreddits = await Subreddit.find({
+      name: { $regex: q, $options: 'i' }
+    })
+    .select('name description members logo')
+    .limit(10);
+
+    res.json(subreddits);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = { 
     getSubreddits, 
     createSubreddit, 
     getSubredditByName, 
     updateSubreddit, 
     joinSubreddit, 
-    leaveSubreddit 
+    leaveSubreddit,
+    searchSubreddits
 };

@@ -5,7 +5,7 @@ import CommentItem from './CommentItem';
 import { API_URL } from './config';
 import './PostDetails.css'; // Import the new CSS
 
-const PostDetails = ({ currentUser }) => {
+const PostDetails = ({ currentUser, refreshPosts }) => {
   const { postId } = useParams(); 
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -43,10 +43,20 @@ const PostDetails = ({ currentUser }) => {
         const postRes = await fetch(`${API_URL}/posts/${postId}`); 
         const postData = await postRes.json();
         
+        const upList = postData.upvotedBy || [];
+        const downList = postData.downvotedBy || [];
+        const username = currentUser?.username || currentUser;
+        
+        let userVote = 0;
+        if (username) {
+            if (upList.includes(username)) userVote = 1;
+            else if (downList.includes(username)) userVote = -1;
+        }
+
         const commentRes = await fetch(`${API_URL}/comments/post/${postId}`);
         const commentData = await commentRes.json();
 
-        setPost(postData);
+        setPost({ ...postData, userVote });
         setComments(buildCommentTree(commentData));
       } catch (error) {
         console.error("Error loading post:", error);
@@ -56,6 +66,47 @@ const PostDetails = ({ currentUser }) => {
     };
     fetchData();
   }, [postId]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshPosts) {
+        refreshPosts();
+      }
+    };
+  }, []);
+
+  const handleVote = async (id, direction) => {
+    if (!currentUser) return alert("Please log in to vote!");
+
+    let newVotes = post.votes;
+    let newUserVote = post.userVote;
+
+    if (post.userVote === 0) {
+      if (direction === 'up') { newVotes += 1; newUserVote = 1; }
+      else { newVotes -= 1; newUserVote = -1; }
+    } else if (post.userVote === 1) {
+      if (direction === 'up') { newVotes -= 1; newUserVote = 0; } 
+      else { newVotes -= 2; newUserVote = -1; }
+    } else if (post.userVote === -1) {
+      if (direction === 'up') { newVotes += 2; newUserVote = 1; } 
+      else { newVotes += 1; newUserVote = 0; }
+    }
+
+    setPost(prev => ({ ...prev, votes: newVotes, userVote: newUserVote }));
+
+    try {
+      await fetch(`${API_URL}/posts/${id}/vote`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          direction, 
+          username: currentUser.username || currentUser 
+        })
+      });
+    } catch (error) { 
+      console.error("Vote error:", error); 
+    }
+  };
 
   const handleSummarize = async () => {
     if (!post?.content) return alert("This post has no text content to summarize.");
@@ -122,7 +173,7 @@ const PostDetails = ({ currentUser }) => {
               time: post.createdAt,
               mediaUrl: post.mediaUrl
             }} 
-            onVote={() => {}} 
+            onVote={handleVote}
             currentUser={currentUser} 
           />
 
@@ -200,7 +251,6 @@ const PostDetails = ({ currentUser }) => {
           </div>
        </div>
        
-       {/* Sidebar removed as requested */}
     </div>
   );
 };
