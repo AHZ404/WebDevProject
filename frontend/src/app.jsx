@@ -319,7 +319,9 @@ const App = () => {
           />
           <Route
             path="/u/:username"
-            element={<Profile currentUser={currentUser} />}
+            element={<Profile 
+              currentUser={currentUser}
+              refreshPosts={fetchPosts} />}
           />
           <Route
             path="/r/:communityName/comments/:postId"

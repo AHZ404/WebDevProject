@@ -34,8 +34,7 @@ const userSchema = mongoose.Schema({
     }
   },
   karma: {
-    postKarma: { type: Number, default: 0 },
-    commentKarma: { type: Number, default: 0 }
+    type: Number, default: 0 
   },
   preferences: {
     theme: { type: String, enum: ['light', 'dark', 'auto'], default: 'auto' },

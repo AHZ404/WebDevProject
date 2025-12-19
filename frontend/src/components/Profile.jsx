@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import Post from "./Post";
 import { API_URL } from "./config";
 
-const Profile = ({ currentUser }) => {
+const Profile = ({ currentUser, refreshPosts}) => {
   const { username } = useParams();
 
   // --- STATE ---
@@ -146,6 +146,72 @@ const Profile = ({ currentUser }) => {
     if (username) fetchData();
   }, [username, activeTab]);
 
+  useEffect(() => {
+      return () => {
+        if (refreshPosts) {
+          refreshPosts();
+        }
+      };
+    }, []);
+
+ 
+
+  const handleVote = async (postId, direction) => {
+    if (!currentUser) return alert("Please log in to vote!");
+    const username = currentUser.username || currentUser;
+
+    setUserPosts((prevPosts) =>
+      prevPosts.map((post) => {
+        if (post._id !== postId) return post; 
+
+        let newUpvotedBy = [...(post.upvotedBy || [])];
+        let newDownvotedBy = [...(post.downvotedBy || [])];
+
+        newUpvotedBy = newUpvotedBy.filter((u) => u !== username);
+        newDownvotedBy = newDownvotedBy.filter((u) => u !== username);
+
+        let newVotes = post.votes;
+        
+        const isUp = (post.upvotedBy || []).includes(username);
+        const isDown = (post.downvotedBy || []).includes(username);
+        
+        if (isUp) newVotes--;
+        if (isDown) newVotes++;
+
+        if (isUp && direction === "up") {
+        } else if (isDown && direction === "down") {
+        } else {
+           if (direction === "up") {
+             newVotes++;
+             newUpvotedBy.push(username);
+           } else {
+             newVotes--;
+             newDownvotedBy.push(username);
+           }
+        }
+
+        return {
+          ...post,
+          votes: newVotes,
+          upvotedBy: newUpvotedBy,
+          downvotedBy: newDownvotedBy,
+        };
+      })
+    );
+
+    try {
+      await fetch(`${API_URL}/posts/${postId}/vote`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ direction, username }),
+      });
+    } catch (error) {
+      console.error("Vote error:", error);
+    }
+  };
+
+
+
   // 3. HANDLE SAVE BIO AND PROFILE IMAGES
   const handleSaveBio = async () => {
     try {
@@ -262,6 +328,18 @@ const Profile = ({ currentUser }) => {
   if (error) return <div style={styles.error}>Error: {error}</div>;
 
   if (!profileData) return <div style={styles.error}>Profile not found</div>;
+
+  const getAccountAge = (dateString) => {
+    if (!dateString) return "1d";
+    const created = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - created);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays >= 365) return `${Math.floor(diffDays / 365)}y`;
+    if (diffDays >= 30) return `${Math.floor(diffDays / 30)}m`;
+    return `${diffDays}d`;
+  };
 
   return (
     <div style={styles.pageContainer}>
@@ -681,7 +759,7 @@ const Profile = ({ currentUser }) => {
                     upvotedBy: post.upvotedBy || [],
                     downvotedBy: post.downvotedBy || [],
                   }}
-                  onVote={() => {}}
+                  onVote={handleVote}
                   currentUser={currentUser}
                 />
               ))
@@ -746,20 +824,22 @@ const Profile = ({ currentUser }) => {
       {/* --- RIGHT COLUMN --- */}
       <div style={styles.sidebar}>
         <div style={styles.karmaCard}>
-          <h3 style={styles.karmaTitle}>Karma</h3>
-          <div style={styles.karmaContent}>
-            <div style={styles.karmaRow}>
-              <span style={styles.karmaLabel}>Post Karma</span>
-              <strong style={styles.karmaValue}>
-                {profileData.karma?.postKarma || 0}
-              </strong>
+          {/* Block 1: Karma */}
+          <div style={{ marginBottom: "16px" }}>
+            <div style={styles.statValue}>
+              {typeof profileData.karma === "number" ? profileData.karma : 0}
             </div>
-            <div style={styles.karmaRow}>
-              <span style={styles.karmaLabel}>Comment Karma</span>
-              <strong style={styles.karmaValue}>
-                {profileData.karma?.commentKarma || 0}
-              </strong>
+            <div style={styles.statLabel}>Karma</div>
+          </div>
+
+          {/* Block 2: Reddit Age */}
+          <div>
+            <div style={styles.statValue}>
+              {getAccountAge(
+                profileData.createdAt || profileData.profile.cakeDay
+              )}
             </div>
+            <div style={styles.statLabel}>Reddit Age</div>
           </div>
         </div>
       </div>
@@ -1068,6 +1148,18 @@ const styles = {
     border: "1px solid #343536",
     borderRadius: "4px",
     color: "#818384",
+  },
+
+  statValue: {
+    fontSize: "24px",
+    fontWeight: "700",
+    color: "#ffffff", 
+    lineHeight: "32px",
+  },
+  statLabel: {
+    fontSize: "14px",
+    color: "#818384", 
+    fontWeight: "500", 
   },
 };
 

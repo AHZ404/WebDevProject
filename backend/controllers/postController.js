@@ -328,10 +328,13 @@ const getPostsByUser = async (req, res) => {
 const votePost = async (req, res) => {
   try {
     const { id } = req.params;
-    const { direction, username } = req.body; // <--- Expect Username now
+    const { direction, username } = req.body;
 
     const post = await Post.findById(id);
     if (!post) return res.status(404).json({ message: "Post not found" });
+
+    const author = await User.findById(post.user); 
+    let karmaChange = 0;
 
     const alreadyUpvoted = post.upvotedBy.includes(username);
     const alreadyDownvoted = post.downvotedBy.includes(username);
@@ -340,26 +343,37 @@ const votePost = async (req, res) => {
         if (alreadyUpvoted) {
             post.votes -= 1;
             post.upvotedBy.pull(username);
+            karmaChange = -1;
         } else if (alreadyDownvoted) {
             post.votes += 2;
             post.downvotedBy.pull(username);
             post.upvotedBy.push(username);
+            karmaChange = 2;
         } else {
             post.votes += 1;
             post.upvotedBy.push(username);
+            karmaChange = 1;
         }
     } else if (direction === 'down') {
         if (alreadyDownvoted) {
             post.votes += 1;
             post.downvotedBy.pull(username);
+            karmaChange = 1;
         } else if (alreadyUpvoted) {
             post.votes -= 2;
             post.upvotedBy.pull(username);
             post.downvotedBy.push(username);
+            karmaChange = -2;
         } else {
             post.votes -= 1;
             post.downvotedBy.push(username);
+            karmaChange = -1;
         }
+    }
+
+    if (author) { 
+        author.karma = (author.karma || 0) + karmaChange;
+        await author.save();
     }
 
     await post.save();

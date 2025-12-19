@@ -249,7 +249,7 @@ const searchUsers = async (req, res) => {
     const users = await User.find({ 
       username: { $regex: q, $options: 'i' } 
     })
-    .select('username profile.avatar profile.bio') // Only get what we need
+    .select('username profile.avatar profile.bio') 
     .limit(10);
 
     res.json(users);

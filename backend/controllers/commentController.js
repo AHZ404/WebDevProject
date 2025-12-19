@@ -42,6 +42,9 @@ const voteComment = async (req, res) => {
     const comment = await Comment.findById(id);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
 
+    const author = await User.findById(comment.author); 
+    let karmaChange = 0;
+
     const alreadyUpvoted = comment.upvotedBy.includes(username);
     const alreadyDownvoted = comment.downvotedBy.includes(username);
 
@@ -49,26 +52,37 @@ const voteComment = async (req, res) => {
         if (alreadyUpvoted) {
             comment.votes -= 1;
             comment.upvotedBy.pull(username);
+            karmaChange = -1;
         } else if (alreadyDownvoted) {
             comment.votes += 2;
             comment.downvotedBy.pull(username);
             comment.upvotedBy.push(username);
+            karmaChange = 2;
         } else {
             comment.votes += 1;
             comment.upvotedBy.push(username);
+            karmaChange = 1;
         }
     } else if (direction === 'down') {
         if (alreadyDownvoted) {
             comment.votes += 1;
             comment.downvotedBy.pull(username);
+            karmaChange = 1;
         } else if (alreadyUpvoted) {
             comment.votes -= 2;
             comment.upvotedBy.pull(username);
             comment.downvotedBy.push(username);
+            karmaChange = -2;
         } else {
             comment.votes -= 1;
             comment.downvotedBy.push(username);
+            karmaChange = -1;
         }
+    }
+
+    if (author) {
+        author.karma = (author.karma || 0) + karmaChange;
+        await author.save();
     }
 
     await comment.save();

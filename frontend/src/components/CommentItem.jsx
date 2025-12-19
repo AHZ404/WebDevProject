@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from './config';
-import './CommentItem.css'; // Import the CSS file
+import { Link } from 'react-router-dom';
+import './CommentItem.css'; 
 
 const CommentItem = ({ comment, postId, currentUser }) => {
   const [showReplyForm, setShowReplyForm] = useState(false);
@@ -87,12 +88,22 @@ const CommentItem = ({ comment, postId, currentUser }) => {
     <div className={`comment-item ${comment.parentComment ? 'nested' : ''}`}>
       
       {/* Header */}
-      <div className="comment-header">
-        <div className="user-avatar"></div>
-        <strong className="author-name">{comment.author?.username || 'u/deleted'}</strong>
-        <span className="separator">•</span>
-        <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
-      </div>
+        <div className="comment-header">
+          <div className="user-avatar"></div>    
+          {comment.author?.username ? (
+            <Link 
+              to={`/u/${comment.author.username}`} 
+              className="author-name"
+              style={{ textDecoration: 'none', fontWeight: 'bold', fontSize: '12px'}}
+            >
+              <strong>{comment.author.username}</strong>
+            </Link>
+          ) : (
+            <strong className="author-name">u/deleted</strong>
+          )}
+          <span className="separator">•</span>
+          <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+        </div>
 
       {/* Content */}
       <div className="comment-content">
