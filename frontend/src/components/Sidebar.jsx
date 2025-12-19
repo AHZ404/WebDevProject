@@ -70,12 +70,20 @@ const Sidebar = ({
         if (found) return true;
       }
 
-      // Fallback to localStorage flag set when user joined from elsewhere
+      // Fallback to per-user localStorage flag set when user joined from elsewhere
       try {
-        const flag = localStorage.getItem(
-          `joined_${cleanCommunityName(comm.name).toLowerCase()}`
-        );
-        if (flag === "true") return true;
+        if (effectiveUser) {
+          const usernameKey =
+            currentUsername || effectiveUser.username || effectiveUser;
+          if (usernameKey) {
+            const flag = localStorage.getItem(
+              `joined_${usernameKey}_${cleanCommunityName(
+                comm.name
+              ).toLowerCase()}`
+            );
+            if (flag === "true") return true;
+          }
+        }
       } catch (e) {}
 
       return false;
