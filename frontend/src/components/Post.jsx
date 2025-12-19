@@ -165,17 +165,23 @@ const Post = ({ post, onVote, currentUser }) => {
         <div className="post-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {/* Top Line: Community Name */}
-            <span className="community-name" style={{ fontWeight: 'bold', fontSize: '12px' }}>
+            <Link 
+              to={`/r/${communityNameClean}`}
+              className="community-name" 
+              style={{ fontWeight: 'bold', fontSize: '12px', textDecoration: 'none' }}
+              onClick={(e) => e.stopPropagation()} 
+              onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+              onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+            >
               r/{communityNameClean}
-            </span>
+            </Link>
             
             {/* Bottom Line: User and Date */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#818384', marginTop: '2px' }}>
-              {/* Clickable Username Link */}
               <Link 
-                to={`/${post.user}`} /* Navigates to /u/username */
+                to={`/${post.user}`} 
                 style={{ color: 'inherit', textDecoration: 'none' }}
-                onClick={(e) => e.stopPropagation()} /* Prevents opening post details when clicking user */
+                onClick={(e) => e.stopPropagation()} 
                 onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
                 onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
               >

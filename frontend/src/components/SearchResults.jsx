@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { API_URL } from "./config";
 import Post from "./Post";
 
 const SearchResults = ({ currentUser }) => {
-  const [posts, setPosts] = useState([]);
+  const [activeTab, setActiveTab] = useState("posts"); 
+  const [results, setResults] = useState({
+    posts: [],
+    communities: [],
+    users: []
+  });
   const [loading, setLoading] = useState(true);
 
   const location = useLocation();
@@ -13,125 +18,197 @@ const SearchResults = ({ currentUser }) => {
   useEffect(() => {
     if (!query) return;
 
-    const fetchSearch = async () => {
+    const fetchAllResults = async () => {
       setLoading(true);
       try {
-        // Get current username
-        const savedUserStr = localStorage.getItem("user");
-        let currentUsername = null;
-        if (savedUserStr) {
-          try {
-            const parsed = JSON.parse(savedUserStr);
-            currentUsername = parsed.username || parsed;
-          } catch(e) { 
-            currentUsername = savedUserStr; 
-          }
-        }
+        // Fetch all 3 in parallel
+        const [postsRes, commsRes, usersRes] = await Promise.all([
+          fetch(`${API_URL}/posts/search?q=${query}`),
+          fetch(`${API_URL}/subreddits/search?q=${query}`),
+          fetch(`${API_URL}/users/search?q=${query}`)
+        ]);
 
-        const url = `${API_URL}/posts/search?q=${query}`;
-        
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        // Map the data correctly with all required fields and check vote status
-        setPosts((data || []).map(post => {
-          const upList = post.upvotedBy || [];
-          const downList = post.downvotedBy || [];
-          
-          const upvoted = upList.includes(currentUsername);
-          const downvoted = downList.includes(currentUsername);
-          
-          let status = 0;
-          if (upvoted) status = 1;
-          if (downvoted) status = -1;
+        const postsData = await postsRes.json();
+        const commsData = await commsRes.json();
+        const usersData = await usersRes.json();
 
-          return {
-            id: post._id,
-            title: post.title,
-            content: post.content,
-            votes: post.votes,
-            comments: post.commentsCount,
-            mediaUrl: post.mediaUrl,
-            community: post.community,
-            user: `u/${post.username}`,
-            userVote: status,
-            time: post.createdAt,
-            upvotedBy: upList,
-            downvotedBy: downList
-          };
-        }));
+        // Process posts (add vote status)
+        const processedPosts = (postsData || []).map(post => {
+            const upList = post.upvotedBy || [];
+            const downList = post.downvotedBy || [];
+            const username = currentUser?.username || currentUser;
+            
+            let userVote = 0;
+            if (username) {
+                if (upList.includes(username)) userVote = 1;
+                else if (downList.includes(username)) userVote = -1;
+            }
+
+            return {
+                ...post,
+                id: post._id,
+                user: post.username || post.user?.username || 'unknown',
+                votes: (post.votes || 0),
+                userVote
+            };
+        });
+
+        setResults({
+            posts: processedPosts,
+            communities: commsData || [],
+            users: usersData || []
+        });
+
       } catch (error) {
-        console.error("Failed to fetch search results:", error);
-        setPosts([]);
+        console.error("Search error:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSearch();
-  }, [query]); 
+    fetchAllResults();
+  }, [query, currentUser]);
 
-  // Handle voting
-  const handleVote = async (postId, direction) => {
-    if (!currentUser) return alert("You must be logged in to vote!");
+  const tabStyle = (tabName) => ({
+    padding: "10px 20px",
+    cursor: "pointer",
+    borderBottom: activeTab === tabName ? "2px solid #d7dadc" : "2px solid transparent",
+    color: activeTab === tabName ? "#d7dadc" : "#818384",
+    fontWeight: "bold",
+    background: "transparent",
+    border: "none",
+    fontSize: "14px"
+  });
 
-    const post = posts.find(p => p.id === postId);
-    if (!post) return;
-
-    let newVoteCount = post.votes;
-    let newUserVote = post.userVote || 0;
-    
-    if (newUserVote === 0) {
-      if (direction === 'up') { newVoteCount += 1; newUserVote = 1; } 
-      else { newVoteCount -= 1; newUserVote = -1; }
-    } else if (newUserVote === 1) {
-      if (direction === 'up') { newVoteCount -= 1; newUserVote = 0; } 
-      else { newVoteCount -= 2; newUserVote = -1; }
-    } else if (newUserVote === -1) {
-      if (direction === 'up') { newVoteCount += 2; newUserVote = 1; } 
-      else { newVoteCount += 1; newUserVote = 0; }
-    }
-
-    const updatedPosts = posts.map(p => 
-      p.id === postId ? { ...p, votes: newVoteCount, userVote: newUserVote } : p
-    );
-    setPosts(updatedPosts);
-
-    try {
-      await fetch(`${API_URL}/posts/${postId}/vote`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          direction, 
-          username: currentUser.username || currentUser 
-        })
-      });
-    } catch (error) { 
-      console.error("Vote error:", error); 
-    }
-  };
-
-  if (loading) return <div style={{ padding: "20px" }}>Searching...</div>;
+  if (loading) return <div style={{ padding: "20px", color: "#d7dadc" }}>Searching...</div>;
 
   return (
     <div className="main-container">
-      <div className="posts-container" style={{maxWidth: '800px', margin: '20px auto'}}>
+      <div className="posts-container" style={{maxWidth: '800px', margin: '0 auto'}}>
+        
+        <h2 style={{ margin: "20px 0 10px", color: "#d7dadc" }}>
+            Results for "{query}"
+        </h2>
 
-        {/* RESULTS DISPLAY */}
-        <h3 style={{marginBottom: '15px'}}>Results for "{query}"</h3>
+        {/* TABS */}
+        <div style={{ display: "flex", borderBottom: "1px solid #343536", marginBottom: "20px" }}>
+            <button onClick={() => setActiveTab("posts")} style={tabStyle("posts")}>
+                Posts ({results.posts.length})
+            </button>
+            <button onClick={() => setActiveTab("communities")} style={tabStyle("communities")}>
+                Communities ({results.communities.length})
+            </button>
+            <button onClick={() => setActiveTab("people")} style={tabStyle("people")}>
+                People ({results.users.length})
+            </button>
+        </div>
 
-        {posts.length > 0 ? (
-          posts.map(post => (
-            <Post
-              key={post.id}
-              post={post}
-              currentUser={currentUser}
-              onVote={handleVote}
-            />
-          ))
-        ) : (
-          <p>No results found for "{query}"</p>
+        {/* POSTS TAB */}
+        {activeTab === "posts" && (
+            <div>
+                {results.posts.length > 0 ? (
+                    results.posts.map(post => (
+                        <Post key={post.id} post={post} currentUser={currentUser} onVote={() => {}} />
+                    ))
+                ) : (
+                    <div style={{ padding: "20px", color: "#818384" }}>No posts found.</div>
+                )}
+            </div>
         )}
+
+        {/* COMMUNITIES TAB */}
+        {activeTab === "communities" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {results.communities.length > 0 ? (
+                    results.communities.map(sub => (
+                        <Link 
+                            to={`/r/${sub.name}`} 
+                            key={sub._id}
+                            style={{ textDecoration: 'none' }}
+                        >
+                            <div style={{ 
+                                display: 'flex', alignItems: 'center', padding: '15px', 
+                                background: '#1a1a1b', border: '1px solid #343536', borderRadius: '4px' 
+                            }}>
+                                <div style={{ 
+                                    width: '40px', height: '40px', borderRadius: '50%', 
+                                    background: '#0079d3', marginRight: '15px', overflow: 'hidden',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
+                                }}>
+                                    {sub.logo ? (
+                                        <img src={`${API_URL}/${sub.logo}`} alt={sub.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <span style={{ fontWeight: 'bold' }}>r/</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <div style={{ color: '#d7dadc', fontWeight: 'bold' }}>r/{sub.name}</div>
+                                    <div style={{ color: '#818384', fontSize: '12px' }}>
+                                        {sub.members} members • {sub.description || "No description"}
+                                    </div>
+                                </div>
+                                <button style={{ 
+                                    marginLeft: 'auto', padding: '6px 20px', borderRadius: '20px', 
+                                    border: '1px solid #d7dadc', background: 'transparent', color: '#d7dadc', 
+                                    fontWeight: 'bold', cursor: 'pointer' 
+                                }}>
+                                    View
+                                </button>
+                            </div>
+                        </Link>
+                    ))
+                ) : (
+                    <div style={{ padding: "20px", color: "#818384" }}>No communities found.</div>
+                )}
+            </div>
+        )}
+
+        {/* PEOPLE TAB */}
+        {activeTab === "people" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {results.users.length > 0 ? (
+                    results.users.map(user => (
+                        <Link 
+                            to={`/u/${user.username}`} 
+                            key={user._id}
+                            style={{ textDecoration: 'none' }}
+                        >
+                            <div style={{ 
+                                display: 'flex', alignItems: 'center', padding: '15px', 
+                                background: '#1a1a1b', border: '1px solid #343536', borderRadius: '4px' 
+                            }}>
+                                <div style={{ 
+                                    width: '40px', height: '40px', borderRadius: '50%', 
+                                    background: '#343536', marginRight: '15px', overflow: 'hidden'
+                                }}>
+                                    {user.profile?.avatar ? (
+                                        <img src={`${API_URL}/${user.profile.avatar}`} alt={user.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <div style={{ width: '100%', height: '100%', background: '#ff4500' }} />
+                                    )}
+                                </div>
+                                <div>
+                                    <div style={{ color: '#d7dadc', fontWeight: 'bold' }}>u/{user.username}</div>
+                                    <div style={{ color: '#818384', fontSize: '12px' }}>
+                                        {user.profile?.bio || "No bio available"}
+                                    </div>
+                                </div>
+                                <button style={{ 
+                                    marginLeft: 'auto', padding: '6px 20px', borderRadius: '20px', 
+                                    background: '#0079d3', color: 'white', border: 'none', 
+                                    fontWeight: 'bold', cursor: 'pointer' 
+                                }}>
+                                    View Profile
+                                </button>
+                            </div>
+                        </Link>
+                    ))
+                ) : (
+                    <div style={{ padding: "20px", color: "#818384" }}>No users found.</div>
+                )}
+            </div>
+        )}
+
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ const Header = ({
   const [suggestions, setSuggestions] = useState({
     posts: [],
     communities: [],
+    users: []
   });
   const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const Header = ({
   // Fetch suggestions as user types
   const fetchSuggestions = async (query) => {
     if (!query.trim()) {
-      setSuggestions({ posts: [], communities: [] });
+      setSuggestions({ posts: [], communities: [], users: [] });
       return;
     }
 
@@ -53,9 +54,13 @@ const Header = ({
         c.name.toLowerCase().includes(query.toLowerCase())
       );
 
+      const usersRes = await fetch(`${API_URL}/users/search?q=${query}`);
+      const usersData = await usersRes.json();
+
       setSuggestions({
-        posts: postsData.slice(0, 5),
-        communities: matchingCommunities.slice(0, 5),
+        posts: Array.isArray(postsData) ? postsData.slice(0, 5) : [],
+        communities: Array.isArray(communitiesData) ? communitiesData.slice(0, 5) : [],
+        users: Array.isArray(usersData) ? usersData.slice(0, 5) : [] 
       });
     } catch (error) {
       console.error("Error fetching suggestions:", error);
@@ -237,6 +242,48 @@ const Header = ({
                           <div className="suggestion-sub">
                             {community.members || 0} members
                           </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* PEOPLE SECTION */}
+                {suggestions.users.length > 0 && (
+                  <div className="suggestions-section">
+                    <div className="suggestions-section-title">PEOPLE</div>
+                    {suggestions.users.map((user) => (
+                      <div
+                        key={user._id}
+                        className="suggestion-item"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSearchTerm("");
+                          setShowSuggestions(false);
+                          navigate(`/u/${user.username}`); 
+                        }}
+                      >
+                        <div 
+                          className="community-icon" 
+                          style={{
+                             borderRadius: '50%', 
+                             overflow: 'hidden',
+                             background: '#333'
+                          }}
+                        >
+                           {user.profile && user.profile.avatar ? (
+                              <img 
+                                src={`${API_URL}/${user.profile.avatar}`} 
+                                alt="" 
+                                style={{width:'100%', height:'100%', objectFit:'cover'}}
+                              />
+                           ) : (
+                              <span style={{color:'white', fontSize:'12px', display:'flex', alignItems:'center', justifyContent:'center', height:'100%'}}>u/</span>
+                           )}
+                        </div>
+                        
+                        <div className="suggestion-content">
+                          <div className="suggestion-main">u/{user.username}</div>
+                          <div className="suggestion-sub">User</div>
                         </div>
                       </div>
                     ))}

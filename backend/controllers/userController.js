@@ -240,11 +240,29 @@ const unfollowUser = async (req, res) => {
   }
 };
 
+
+const searchUsers = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.status(400).json({ message: "Query required" });
+
+    const users = await User.find({ 
+      username: { $regex: q, $options: 'i' } 
+    })
+    .select('username profile.avatar profile.bio') // Only get what we need
+    .limit(10);
+
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
-
-  // Follow Feature Exports
   followUser,
-  unfollowUser
+  unfollowUser,
+  searchUsers
 };
