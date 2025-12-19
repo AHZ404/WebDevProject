@@ -77,7 +77,7 @@ const Chat = ({ currentUser }) => {
     }
   };
 
-  // ✅ NEW: Refresh button should refresh the currently open chat messages too
+  // ✅ NEW:: Refresh button should refresh the currently open chat messages too
   const handleRefresh = async () => {
     try {
       if (selectedChat) {
