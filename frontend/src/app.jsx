@@ -259,6 +259,7 @@ const App = () => {
                   currentUser={currentUser}
                   communities={communities}
                   onCreatePostClick={handleCreatePostClick}
+                  onCreateCommunityClick={handleCreateCommunityClick}
                 />
 
                 <div className="posts-container">

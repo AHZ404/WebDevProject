@@ -7,6 +7,7 @@ const Sidebar = ({
   currentUser,
   communities = [],
   onCreatePostClick,
+  onCreateCommunityClick,
   currentCommunity,
 }) => {
   const navigate = useNavigate();
@@ -191,7 +192,7 @@ const Sidebar = ({
               alert("Please log in to create a community");
               return;
             }
-            onCreatePostClick();
+            onCreateCommunityClick();
           }}
         >
           <span>+</span>

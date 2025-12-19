@@ -43,12 +43,12 @@ const Header = ({
     try {
       // Fetch matching posts
       const postsRes = await fetch(
-        `http://localhost:3000/posts/search?q=${query}`
+        `${API_URL}/posts/search?q=${query}`
       );
       const postsData = await postsRes.json();
 
       // Fetch matching communities
-      const communitiesRes = await fetch(`http://localhost:3000/subreddits`);
+      const communitiesRes = await fetch(`${API_URL}/subreddits`);
       const communitiesData = await communitiesRes.json();
       const matchingCommunities = communitiesData.filter((c) =>
         c.name.toLowerCase().includes(query.toLowerCase())
@@ -59,7 +59,7 @@ const Header = ({
 
       setSuggestions({
         posts: Array.isArray(postsData) ? postsData.slice(0, 5) : [],
-        communities: Array.isArray(communitiesData) ? communitiesData.slice(0, 5) : [],
+        communities: Array.isArray(matchingCommunities) ? matchingCommunities.slice(0, 5) : [],
         users: Array.isArray(usersData) ? usersData.slice(0, 5) : [] 
       });
     } catch (error) {
