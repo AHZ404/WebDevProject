@@ -116,12 +116,15 @@ const Community = ({
           currentUser?.username ||
           (typeof currentUser === "string" ? currentUser : null);
         if (usernameKey) {
-          const key = `joined_${usernameKey}_${cleanName}`;
+          const keyLower = `joined_${usernameKey}_${cleanName.toLowerCase()}`;
+          const keyExact = `joined_${usernameKey}_${cleanName}`;
           if (action === "join") {
-            localStorage.setItem(key, "true");
+            localStorage.setItem(keyLower, "true");
+            localStorage.setItem(keyExact, "true");
             setIsJoined(true);
           } else {
-            localStorage.removeItem(key);
+            localStorage.removeItem(keyLower);
+            localStorage.removeItem(keyExact);
             setIsJoined(false);
           }
         }
@@ -258,22 +261,54 @@ const Community = ({
             }
           }
 
-          if (
+          // Determine effective user identifiers
+          const currentUserId =
+            (effectiveUser && (effectiveUser._id || effectiveUser.id)) || null;
+          const currentUsername =
+            (effectiveUser &&
+              (effectiveUser.username ||
+                (typeof effectiveUser === "string" ? effectiveUser : null))) ||
+            null;
+
+          // If user created the community, they should be treated as joined
+          let creatorMatch = false;
+          if (effectiveUser && data.creator) {
+            const creator = data.creator;
+            if (typeof creator === "string") {
+              creatorMatch =
+                (currentUserId &&
+                  creator.toString() === currentUserId.toString()) ||
+                (currentUsername && creator === currentUsername);
+            } else if (typeof creator === "object") {
+              const cid = creator._id || creator.id;
+              const cusername = creator.username || null;
+              creatorMatch =
+                (currentUserId &&
+                  cid &&
+                  cid.toString() === currentUserId.toString()) ||
+                (currentUsername && cusername === currentUsername);
+            }
+          }
+
+          if (creatorMatch) {
+            setIsJoined(true);
+            // Keep local flag consistent (used as fallback elsewhere)
+            try {
+              const usernameKey =
+                effectiveUser.username ||
+                (typeof effectiveUser === "string" ? effectiveUser : null);
+              if (usernameKey) {
+                const keyLower = `joined_${usernameKey}_${cleanName.toLowerCase()}`;
+                localStorage.setItem(keyLower, "true");
+              }
+            } catch (e) {
+              /* ignore localStorage errors */
+            }
+          } else if (
             effectiveUser &&
             data.membersList &&
             Array.isArray(data.membersList)
           ) {
-            const currentUserId =
-              (effectiveUser && (effectiveUser._id || effectiveUser.id)) ||
-              null;
-            const currentUsername =
-              (effectiveUser &&
-                (effectiveUser.username ||
-                  (typeof effectiveUser === "string"
-                    ? effectiveUser
-                    : null))) ||
-              null;
-
             const isMember = data.membersList.some((member) => {
               if (!member) return false;
               // member might be an ObjectId (string) or an object when populated
@@ -308,8 +343,11 @@ const Community = ({
                     effectiveUser.username ||
                     (typeof effectiveUser === "string" ? effectiveUser : null);
                   if (usernameKey) {
-                    const key = `joined_${usernameKey}_${cleanName}`;
-                    const savedFlag = localStorage.getItem(key);
+                    const keyLower = `joined_${usernameKey}_${cleanName.toLowerCase()}`;
+                    const keyExact = `joined_${usernameKey}_${cleanName}`;
+                    const savedFlag =
+                      localStorage.getItem(keyLower) ||
+                      localStorage.getItem(keyExact);
                     if (savedFlag === "true") {
                       setIsJoined(true);
                     } else {
@@ -326,7 +364,28 @@ const Community = ({
               }
             }
           } else {
-            setIsJoined(false);
+            // No membersList provided by server: rely on per-user localStorage fallback only
+            try {
+              if (effectiveUser) {
+                const usernameKey =
+                  effectiveUser.username ||
+                  (typeof effectiveUser === "string" ? effectiveUser : null);
+                if (usernameKey) {
+                  const keyLower = `joined_${usernameKey}_${cleanName.toLowerCase()}`;
+                  const keyExact = `joined_${usernameKey}_${cleanName}`;
+                  const savedFlag =
+                    localStorage.getItem(keyLower) ||
+                    localStorage.getItem(keyExact);
+                  setIsJoined(savedFlag === "true");
+                } else {
+                  setIsJoined(false);
+                }
+              } else {
+                setIsJoined(false);
+              }
+            } catch (e) {
+              setIsJoined(false);
+            }
           }
         } else {
           setSubreddit(null);

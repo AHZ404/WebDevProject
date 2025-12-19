@@ -86,7 +86,27 @@ const Profile = ({ currentUser, refreshPosts}) => {
             ? profileWithDefaults.followerCount
             : 0
         );
-        setIsFollowing(!!profileWithDefaults.isFollowedByViewer);
+
+        // Follow button state (server truth with localStorage fallback)
+        if (currentUser?.username) {
+          const viewerKey = currentUser.username.toLowerCase();
+          const targetKey = (profileWithDefaults.username || username || "").toLowerCase();
+          const storageKey = `follow_${viewerKey}_${targetKey}`;
+
+          const serverFlag = profileWithDefaults.isFollowedByViewer;
+          if (typeof serverFlag === "boolean") {
+            setIsFollowing(serverFlag);
+          } else {
+            try {
+              const savedFlag = localStorage.getItem(storageKey);
+              setIsFollowing(savedFlag === "true");
+            } catch (e) {
+              setIsFollowing(false);
+            }
+          }
+        } else {
+          setIsFollowing(false);
+        }
 
         // If profile belongs to an admin, fetch their admin action history
         if (profileWithDefaults.role === "admin") {
@@ -316,6 +336,16 @@ const Profile = ({ currentUser, refreshPosts}) => {
       setIsFollowing(!!data.following);
       if (typeof data.followerCount === "number")
         setFollowerCount(data.followerCount);
+
+      // Persist follow state locally so it doesn't reset on refresh
+      try {
+        const viewerKey = currentUser.username.toLowerCase();
+        const targetKey = (username || "").toLowerCase();
+        const storageKey = `follow_${viewerKey}_${targetKey}`;
+        localStorage.setItem(storageKey, data.following ? "true" : "false");
+      } catch (e) {
+        /* ignore localStorage errors */
+      }
     } catch (err) {
       console.error("❌ Follow toggle error:", err);
       alert("Failed to update follow status.");

@@ -12,6 +12,7 @@ import Community from "./components/Community";
 import { API_URL } from "./components/config.jsx";
 import PostDetails from "./components/PostDetails";
 import SearchResults from "./components/SearchResults";
+import Chat from "./components/Chat"; // ✅ ADDED
 
 const App = () => {
   const [posts, setPosts] = useState([]);
@@ -320,20 +321,21 @@ const App = () => {
           />
           <Route
             path="/u/:username"
-            element={<Profile 
-              currentUser={currentUser}
-              refreshPosts={fetchPosts} />}
+            element={
+              <Profile currentUser={currentUser} refreshPosts={fetchPosts} />
+            }
           />
           <Route
             path="/r/:communityName/comments/:postId"
-            element={<PostDetails 
-              currentUser={currentUser}
-              refreshPosts={fetchPosts} />}
+            element={
+              <PostDetails currentUser={currentUser} refreshPosts={fetchPosts} />
+            }
           />
-          <Route
-            path="/search"
-            element={<SearchResults currentUser={currentUser} />}
-          />
+          <Route path="/search" element={<SearchResults currentUser={currentUser} />} />
+
+          {/* ✅ ADDED: Chats routes so Header + Start Chat actually open Chat.jsx */}
+          <Route path="/chats" element={<Chat currentUser={currentUser} />} />
+          <Route path="/chats/:chatId" element={<Chat currentUser={currentUser} />} />
         </Routes>
       </div>
     </Router>
