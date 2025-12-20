@@ -26,13 +26,16 @@ Follow the steps below to run the project locally.
 
 ## 🔧 1. Backend Setup
 
-Navigate to the backend directory:
+**Navigate to the backend directory:**
 
 cd backend
+
 npm install
+
 npm install @google/generative-ai
 
-Create a file named .env inside the backend directory and add the following:
+
+**Create a file named .env inside the backend directory and add the following:**
 
 MONGO_URI=mongodb+srv://AHZ404:ahmed200411$@cluster0.gzmnhy4.mongodb.net/
 db_Name=reddit_clone
@@ -45,7 +48,8 @@ NODE_ENV=development
 
 GEMINI_API_KEY=AIzaSyBP2Mgy70IFJLAIH_WnMaIv0LdQKNQOZ2s
 
-Start the backend server:
+
+**Start the backend server:**
 
 npm start
 
@@ -53,16 +57,16 @@ npm start
 
 ## 🎨 2. Frontend Setup
 
-Navigate to the frontend directory:
+**Navigate to the frontend directory:**
 
 cd frontend
 
 
-Install dependencies:
+**Install dependencies:**
 
 npm install
 
 
-Start the React development server:
+**Start the React development server:**
 
 npm run dev
