@@ -1,41 +1,38 @@
-🚀 Reddit Clone Project
+# 🚀 Reddit Clone Project
 
-A full-stack Reddit Clone built using the MERN stack:
+A full-stack **Reddit Clone** built using the **MERN stack**:
 
-MongoDB
+- **MongoDB**
+- **Express.js**
+- **React**
+- **Node.js**
 
-Express.js
+---
 
-React
+## 🛠️ Prerequisites
 
-Node.js
+Make sure you have the following installed:
 
-🛠️ Prerequisites
+- **Node.js** (v14 or higher)
+- **MongoDB** (Local installation or MongoDB Atlas)
 
-Make sure you have the following installed on your system:
+---
 
-Node.js (v14 or higher)
-
-MongoDB (Local installation or MongoDB Atlas)
-
-💻 Local Setup Instructions
+## 💻 Local Setup Instructions
 
 Follow the steps below to run the project locally.
 
-🔧 1. Backend Setup
+---
+
+## 🔧 1. Backend Setup
 
 Navigate to the backend directory:
 
 cd backend
-
-
-Install backend dependencies:
-
 npm install
 npm install @google/generative-ai
 
-
-Create a .env file inside the backend directory and add the following configuration:
+Create a file named .env inside the backend directory and add the following:
 
 MONGO_URI=mongodb+srv://AHZ404:ahmed200411$@cluster0.gzmnhy4.mongodb.net/
 db_Name=reddit_clone
@@ -48,23 +45,20 @@ NODE_ENV=development
 
 GEMINI_API_KEY=AIzaSyBP2Mgy70IFJLAIH_WnMaIv0LdQKNQOZ2s
 
-
 Start the backend server:
 
 npm start
 
+---
 
-The backend should now be running on http://localhost:3000
-.
-
-🎨 2. Frontend Setup
+## 🎨 2. Frontend Setup
 
 Navigate to the frontend directory:
 
 cd frontend
 
 
-Install frontend dependencies:
+Install dependencies:
 
 npm install
 
