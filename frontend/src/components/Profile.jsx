@@ -386,7 +386,7 @@ const Profile = ({ currentUser, refreshPosts}) => {
               backgroundImage:
                 bannerPreview ||
                 (profileData.profile.banner
-                  ? `url(${API_URL}/${profileData.profile.banner})`
+                  ? `url(${API_URL}/${profileData.profile.banner.replace(/\\/g, "/")})`
                   : "none"),
               backgroundSize: "cover",
               backgroundPosition: "center",
@@ -406,7 +406,7 @@ const Profile = ({ currentUser, refreshPosts}) => {
                     ? `url(${
                         avatarPreview ||
                         (profileData.profile.avatar
-                          ? `${API_URL}/${profileData.profile.avatar}`
+                          ? `${API_URL}/${profileData.profile.avatar.replace(/\\/g, "/")}`
                           : "")
                       })`
                     : "none",
