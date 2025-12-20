@@ -1,1 +1,1 @@
-export const API_URL = "webdevproject-production-bb61.up.railway.app";
+export const API_URL = "https://webdevproject-production-bb61.up.railway.app";
