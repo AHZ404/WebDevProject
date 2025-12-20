@@ -1,33 +1,48 @@
-# 🚀 Reddit Clone Project
+🚀 Reddit Clone Project
 
-A full-stack Reddit clone built using the **MERN** stack (MongoDB, Express, React, Node.js).
+A full-stack Reddit Clone built using the MERN stack:
 
-## 🛠️ Prerequisites
+MongoDB
 
-* **Node.js** (v14 or higher)
-* **MongoDB** (Local or Atlas)
+Express.js
 
----
+React
 
-## 💻 Local Setup Instructions
+Node.js
 
-Follow these steps to get the application running on your local machine.
+🛠️ Prerequisites
 
-### 1. Backend Setup
+Make sure you have the following installed on your system:
 
-Navigate to the backend folder and install the dependencies:
+Node.js (v14 or higher)
 
-```bash
+MongoDB (Local installation or MongoDB Atlas)
+
+💻 Local Setup Instructions
+
+Follow the steps below to run the project locally.
+
+🔧 1. Backend Setup
+
+Navigate to the backend directory:
+
 cd backend
+
+
+Install backend dependencies:
+
 npm install
 npm install @google/generative-ai
 
-Create a file named .env in the backend directory and add this configuration:
+
+Create a .env file inside the backend directory and add the following configuration:
 
 MONGO_URI=mongodb+srv://AHZ404:ahmed200411$@cluster0.gzmnhy4.mongodb.net/
 db_Name=reddit_clone
+
 JWT_SECRET=ed492b4d07d4fddce26a131f9566394bfa31acda8d35b49963cc7c4a1fb4dad22899e39739c1ab54b5695277fdb133943a0e9ef328048f7759795c0fb29524dd
 JWT_EXPIRES_IN=7d
+
 PORT=3000
 NODE_ENV=development
 
@@ -39,12 +54,21 @@ Start the backend server:
 npm start
 
 
+The backend should now be running on http://localhost:3000
+.
 
+🎨 2. Frontend Setup
 
-### 2. Frontend Setup
+Navigate to the frontend directory:
 
 cd frontend
+
+
+Install frontend dependencies:
+
 npm install
 
-Start the React application:
+
+Start the React development server:
+
 npm run dev
