@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AuthModal.css';
-import { API_URL } from './config';
+import { API_URL } from "./config.jsx";
 
 
 const AuthModal = ({ isOpen, onClose, onLogin, mode = 'login' }) => {
@@ -41,7 +41,7 @@ const AuthModal = ({ isOpen, onClose, onLogin, mode = 'login' }) => {
       }
 
       try {
-        const response = await fetch('${API_URL}/users/signup', {
+        const response = await fetch(`${API_URL}/users/signup`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
