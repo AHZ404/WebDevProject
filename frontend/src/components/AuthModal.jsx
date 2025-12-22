@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AuthModal.css';
-import { API_URL } from '../config';
+import { API_URL } from './config';
 
 
 const AuthModal = ({ isOpen, onClose, onLogin, mode = 'login' }) => {
